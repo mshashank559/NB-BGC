@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nb-bgc-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: nb_bgc
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: nb-bgc-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: nb-bgc-mailpit
+    restart: always
+    ports:
+      - '1025:1025' # SMTP server for reminders
+      - '8025:8025' # Web UI to view dispatched emails
+
+volumes:
+  pgdata:
+  redisdata:
+
