@@ -26,6 +26,7 @@ import { ReportsModal } from '../components/ReportsModal';
 import { LoginScreen } from '@/components/ui/login-form';
 import { UserManagement } from '../components/UserManagement';
 import { UserModal } from '../components/UserModal';
+import { supabase } from '@/lib/supabaseClient';
 
 import {
   CandidateRecord,
@@ -304,26 +305,77 @@ export default function DashboardPage() {
     return [];
   });
 
-  // Load Candidates from Server DB (/api/candidates) on mount & window focus
+  // Real-Time Live Sync: Supabase Realtime Channel + 3-sec Polling + Window Focus
   React.useEffect(() => {
+    let isSubscribed = true;
+
     const syncCandidates = () => {
       fetch('/api/candidates')
         .then((res) => res.json())
         .then((data) => {
+          if (!isSubscribed) return;
           if (data?.success && Array.isArray(data.candidates)) {
-            setCandidates(data.candidates);
-            try {
-              localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(data.candidates));
-            } catch (e) {}
+            setCandidates((prev) => {
+              const prevStr = JSON.stringify(prev);
+              const nextStr = JSON.stringify(data.candidates);
+              if (prevStr === nextStr) {
+                return prev; // No changes, prevent unnecessary re-render
+              }
+              // Data changed live! Trigger smooth count-up animation on KPI cards
+              setCountUpTrigger((c) => c + 1);
+              try {
+                localStorage.setItem('nb_bgc_candidates_list', nextStr);
+              } catch (e) {}
+              return data.candidates;
+            });
           }
         })
-        .catch((err) => console.error('Failed to sync candidates from DB:', err))
-        .finally(() => setCandidatesLoaded(true));
+        .catch((err) => console.error('Live sync error:', err))
+        .finally(() => {
+          if (isSubscribed) setCandidatesLoaded(true);
+        });
     };
 
+    // 1. Initial immediate sync
     syncCandidates();
+
+    // 2. Real-time Supabase WebSocket Listener
+    let channel: any = null;
+    try {
+      channel = supabase
+        .channel('realtime_candidates_feed')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'audit_entries',
+          },
+          () => {
+            syncCandidates();
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime channel init warning:', e);
+    }
+
+    // 3. 3-Second Live Polling Heartbeat (Ensures real-time updates across all networks)
+    const interval = setInterval(syncCandidates, 3000);
+
+    // 4. Window focus listener
     window.addEventListener('focus', syncCandidates);
-    return () => window.removeEventListener('focus', syncCandidates);
+
+    return () => {
+      isSubscribed = false;
+      if (channel) {
+        try {
+          supabase.removeChannel(channel);
+        } catch (e) {}
+      }
+      clearInterval(interval);
+      window.removeEventListener('focus', syncCandidates);
+    };
   }, []);
 
   // Persist Candidates to localStorage & Server DB on changes
