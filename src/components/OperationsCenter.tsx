@@ -1,94 +1,230 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Zap, Bell, Receipt, CheckCircle, Clock } from 'lucide-react';
+import { Bell, Receipt, Shield, Activity, CheckCircle2, ShieldCheck, Zap, FileText } from 'lucide-react';
+import { UserRole } from '../types';
 
-export const OperationsCenter: React.FC = () => {
-  const [autoReminders, setAutoReminders] = useState(true);
-  const [mcpSync, setMcpSync] = useState(true);
+interface OperationsCenterProps {
+  userRole?: UserRole;
+}
 
+export const OperationsCenter: React.FC<OperationsCenterProps> = ({ userRole = 'ADMIN' }) => {
+  const isCompliance = userRole === 'COMPLIANCE_MANAGER';
+
+  // Toggle states
+  const [toggle1, setToggle1] = useState(true);
+  const [toggle2, setToggle2] = useState(true);
+  const [toggle3, setToggle3] = useState(true);
+  const [toggle4, setToggle4] = useState(isCompliance ? true : false);
+
+  if (isCompliance) {
+    return (
+      <div className="grid grid-cols-2 gap-4">
+        {/* 1. Strict 10-Field Gate */}
+        <div className="glass-card rounded-[26px] p-5 flex flex-col justify-between min-h-[140px] ambient-blue">
+          <div className="flex items-start justify-between">
+            <div className="w-9 h-9 rounded-full bg-blue-50/80 backdrop-blur-sm border border-blue-200/70 flex items-center justify-center text-blue-600 shadow-xs">
+              <CheckCircle2 className="w-4 h-4" />
+            </div>
+            <button
+              onClick={() => setToggle1(!toggle1)}
+              className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 ${
+                toggle1 ? 'bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.35)]' : 'bg-slate-200/80'
+              }`}
+            >
+              <div
+                className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                  toggle1 ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 tracking-wide">10-Field Gate</h4>
+            <p className="text-[10px] text-blue-600 font-mono mt-0.5 font-bold">Mandatory PO Check</p>
+          </div>
+        </div>
+
+        {/* 2. FirstAdvantage BGC */}
+        <div className="glass-card rounded-[26px] p-5 flex flex-col justify-between min-h-[140px] ambient-mint">
+          <div className="flex items-start justify-between">
+            <div className="w-9 h-9 rounded-full bg-emerald-50/80 backdrop-blur-sm border border-emerald-200/70 flex items-center justify-center text-emerald-600 shadow-xs">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <button
+              onClick={() => setToggle2(!toggle2)}
+              className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 ${
+                toggle2 ? 'bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.35)]' : 'bg-slate-200/80'
+              }`}
+            >
+              <div
+                className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                  toggle2 ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 tracking-wide">FirstAdvantage</h4>
+            <p className="text-[10px] text-emerald-600 font-mono mt-0.5 font-bold">Live Screening API</p>
+          </div>
+        </div>
+
+        {/* 3. Auto-Handoff Engine */}
+        <div className="glass-card rounded-[26px] p-5 flex flex-col justify-between min-h-[140px] ambient-amber">
+          <div className="flex items-start justify-between">
+            <div className="w-9 h-9 rounded-full bg-amber-50/80 backdrop-blur-sm border border-amber-200/70 flex items-center justify-center text-amber-600 shadow-xs">
+              <Zap className="w-4 h-4" />
+            </div>
+            <button
+              onClick={() => setToggle3(!toggle3)}
+              className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 ${
+                toggle3 ? 'bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.35)]' : 'bg-slate-200/80'
+              }`}
+            >
+              <div
+                className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                  toggle3 ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 tracking-wide">Auto-Handoff</h4>
+            <p className="text-[10px] text-slate-500 font-mono mt-0.5 font-medium">Alerts Accounts Team</p>
+          </div>
+        </div>
+
+        {/* 4. Draft Auto-Recovery */}
+        <div className="glass-card rounded-[26px] p-5 flex flex-col justify-between min-h-[140px]">
+          <div className="flex items-start justify-between">
+            <div className="w-9 h-9 rounded-full bg-slate-100/80 backdrop-blur-sm border border-slate-200/70 flex items-center justify-center text-slate-700 shadow-xs">
+              <FileText className="w-4 h-4" />
+            </div>
+            <button
+              onClick={() => setToggle4(!toggle4)}
+              className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 ${
+                toggle4 ? 'bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.35)]' : 'bg-slate-200/80'
+              }`}
+            >
+              <div
+                className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                  toggle4 ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 tracking-wide">Draft Recovery</h4>
+            <p className="text-[10px] text-purple-600 font-mono mt-0.5 font-bold">Auto-Save Enabled</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin & Accounts View
   return (
-    <div className="bg-[#111927]/60 rounded-3xl p-6 border border-white/5 shadow-spatial-card flex flex-col justify-between">
-      <div className="flex items-center justify-between mb-4">
+    <div className="grid grid-cols-2 gap-4">
+      {/* 1. Auto Reminders Toggle Card */}
+      <div className="glass-card rounded-[26px] p-5 flex flex-col justify-between min-h-[140px]">
+        <div className="flex items-start justify-between">
+          <div className="w-9 h-9 rounded-full bg-blue-50/80 backdrop-blur-sm border border-blue-200/70 flex items-center justify-center text-blue-600 shadow-xs">
+            <Bell className="w-4 h-4" />
+          </div>
+          <button
+            onClick={() => setToggle1(!toggle1)}
+            className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 ${
+              toggle1 ? 'bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.35)]' : 'bg-slate-200/80'
+            }`}
+          >
+            <div
+              className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                toggle1 ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
         <div>
-          <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-            System Controls
-          </span>
-          <h3 className="text-base font-bold text-white">Operations Center</h3>
-        </div>
-        <div className="h-8 w-8 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-          <Zap className="h-4 w-4" />
+          <h4 className="text-sm font-bold text-slate-900 tracking-wide">Auto Reminders</h4>
+          <p className="text-[10px] text-slate-500 font-mono mt-0.5 font-medium">T-3d @ 09:00 IST</p>
         </div>
       </div>
 
-      {/* Toggles List */}
-      <div className="space-y-4 my-2">
-        {/* Toggle 1: Auto Email Reminders */}
-        <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/50 border border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400">
-              <Bell className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-200">Auto Email Reminders</p>
-              <p className="text-[10px] text-slate-500 font-mono">T-2d @ 09:00 IST (Personal)</p>
-            </div>
+      {/* 2. MCP Invoicing Toggle Card */}
+      <div className="glass-card rounded-[26px] p-5 flex flex-col justify-between min-h-[140px]">
+        <div className="flex items-start justify-between">
+          <div className="w-9 h-9 rounded-full bg-blue-50/80 backdrop-blur-sm border border-blue-200/70 flex items-center justify-center text-blue-600 shadow-xs">
+            <Receipt className="w-4 h-4" />
           </div>
-
           <button
-            onClick={() => setAutoReminders(!autoReminders)}
-            className={`w-12 h-6 flex items-center rounded-full p-1 transition-all duration-300 ${
-              autoReminders
-                ? 'bg-gradient-to-r from-cyan-400 to-blue-500 shadow-[0_0_15px_rgba(0,242,254,0.4)]'
-                : 'bg-slate-800'
+            onClick={() => setToggle2(!toggle2)}
+            className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 ${
+              toggle2 ? 'bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.35)]' : 'bg-slate-200/80'
             }`}
           >
             <div
-              className={`bg-slate-950 w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                autoReminders ? 'translate-x-6' : 'translate-x-0'
+              className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                toggle2 ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>
         </div>
+        <div>
+          <h4 className="text-sm font-bold text-slate-900 tracking-wide">MCP Invoicing</h4>
+          <p className="text-[10px] text-blue-600 font-mono mt-0.5 font-bold">Synced v1/v2</p>
+        </div>
+      </div>
 
-        {/* Toggle 2: MCP Invoicing Engine */}
-        <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-900/50 border border-white/5">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400">
-              <Receipt className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-200">MCP Invoicing Engine</p>
-              <p className="text-[10px] text-emerald-400 font-mono">Synced & Ready (v1/v2)</p>
-            </div>
+      {/* 3. Monitoring Toggle Card */}
+      <div className="glass-card rounded-[26px] p-5 flex flex-col justify-between min-h-[140px]">
+        <div className="flex items-start justify-between">
+          <div className="w-9 h-9 rounded-full bg-blue-50/80 backdrop-blur-sm border border-blue-200/70 flex items-center justify-center text-blue-600 shadow-xs">
+            <Activity className="w-4 h-4" />
           </div>
-
           <button
-            onClick={() => setMcpSync(!mcpSync)}
-            className={`w-12 h-6 flex items-center rounded-full p-1 transition-all duration-300 ${
-              mcpSync
-                ? 'bg-gradient-to-r from-cyan-400 to-blue-500 shadow-[0_0_15px_rgba(0,242,254,0.4)]'
-                : 'bg-slate-800'
+            onClick={() => setToggle3(!toggle3)}
+            className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 ${
+              toggle3 ? 'bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.35)]' : 'bg-slate-200/80'
             }`}
           >
             <div
-              className={`bg-slate-950 w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${
-                mcpSync ? 'translate-x-6' : 'translate-x-0'
+              className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                toggle3 ? 'translate-x-5' : 'translate-x-0'
               }`}
             />
           </button>
         </div>
+        <div>
+          <h4 className="text-sm font-bold text-slate-900 tracking-wide">Live Telemetry</h4>
+          <p className="text-[10px] text-emerald-600 font-mono mt-0.5 font-bold">Active Engine</p>
+        </div>
       </div>
 
-      {/* Status Footer */}
-      <div className="pt-3 border-t border-white/5 flex items-center justify-between text-[11px] text-slate-400">
-        <span className="flex items-center gap-1.5 text-emerald-400">
-          <CheckCircle className="h-3 w-3" />
-          <span>Scheduler Active</span>
-        </span>
-        <span className="text-slate-500">Asia/Kolkata</span>
+      {/* 4. Security Sandbox Toggle Card */}
+      <div className="glass-card rounded-[26px] p-5 flex flex-col justify-between min-h-[140px]">
+        <div className="flex items-start justify-between">
+          <div className="w-9 h-9 rounded-full bg-slate-100/80 backdrop-blur-sm border border-slate-200/70 flex items-center justify-center text-slate-700 shadow-xs">
+            <Shield className="w-4 h-4" />
+          </div>
+          <button
+            onClick={() => setToggle4(!toggle4)}
+            className={`w-11 h-6 flex items-center rounded-full p-0.5 transition-all duration-300 ${
+              toggle4 ? 'bg-blue-600 shadow-[0_0_12px_rgba(37,99,235,0.35)]' : 'bg-slate-200/80'
+            }`}
+          >
+            <div
+              className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                toggle4 ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+        <div>
+          <h4 className="text-sm font-bold text-slate-900 tracking-wide">Row Isolation</h4>
+          <p className="text-[10px] text-slate-500 font-mono mt-0.5 font-medium">Tenant Privacy</p>
+        </div>
       </div>
     </div>
   );
 };
-

@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { CandidateRecord, AuditEntry } from '../types';
+import { CandidateRecord, AuditEntry, UserRole } from '../types';
 
 export interface MonthlyReportData {
   month: string;
@@ -54,66 +54,67 @@ export async function generateMonthlyExcelReport(data: MonthlyReportData): Promi
     });
   });
 
-  // Sheet 2: Installment Collections Ledger
-  const instSheet = workbook.addWorksheet('Installment Slots');
-  instSheet.columns = [
+  // Sheet 2: Installments Detail
+  const installmentsSheet = workbook.addWorksheet('Installment Schedule');
+  installmentsSheet.columns = [
     { header: 'Candidate Name', key: 'candidateName', width: 25 },
-    { header: 'Slot #', key: 'slot', width: 10 },
-    { header: 'Tier', key: 'tier', width: 15 },
+    { header: 'Installment #', key: 'number', width: 14 },
     { header: 'Amount ($)', key: 'amount', width: 14 },
     { header: 'Due Date', key: 'dueDate', width: 16 },
     { header: 'Paid Date', key: 'paidDate', width: 16 },
-    { header: 'Slot Status', key: 'status', width: 16 },
-    { header: 'Invoice #', key: 'invoiceNumber', width: 18 },
-    { header: 'Invoice Status', key: 'invoiceStatus', width: 16 },
+    { header: 'Status', key: 'status', width: 14 },
+    { header: 'Invoice #', key: 'invoiceNumber', width: 20 },
+    { header: 'Reminder Date', key: 'reminderDate', width: 18 },
   ];
 
   data.candidates.forEach((cand) => {
-    (cand.paymentPlan?.installments || []).forEach((inst) => {
-      instSheet.addRow({
+    const installments = cand.paymentPlan?.installments || [];
+    installments.forEach((inst) => {
+      installmentsSheet.addRow({
         candidateName: cand.candidateName,
-        slot: inst.number,
-        tier: inst.tier,
+        number: inst.number,
         amount: inst.amount,
         dueDate: inst.dueDate,
-        paidDate: inst.paidDate || 'N/A',
+        paidDate: inst.paidDate || '—',
         status: inst.status,
-        invoiceNumber: inst.invoiceNumber || 'Pending',
-        invoiceStatus: inst.invoiceStatus || 'Draft',
+        invoiceNumber: inst.invoiceNumber || '—',
+        reminderDate: inst.reminderDate || inst.reminderScheduledFor || '—',
       });
     });
   });
 
-  // Sheet 3: Audit Changes & Remarks
-  const auditSheet = workbook.addWorksheet('Audit Log & Remarks');
+  // Sheet 3: Audit Trail
+  const auditSheet = workbook.addWorksheet('Compliance Audit Trail');
   auditSheet.columns = [
-    { header: 'Candidate', key: 'candidate', width: 22 },
-    { header: 'Field Modified', key: 'field', width: 20 },
-    { header: 'Old Value', key: 'oldValue', width: 18 },
-    { header: 'New Value', key: 'newValue', width: 18 },
-    { header: 'Mandatory Remark', key: 'remark', width: 35 },
-    { header: 'Modified By', key: 'user', width: 20 },
-    { header: 'Timestamp', key: 'timestamp', width: 22 },
+    { header: 'Date & Time', key: 'createdAt', width: 22 },
+    { header: 'Candidate', key: 'candidateName', width: 22 },
+    { header: 'Field Adjusted', key: 'field', width: 22 },
+    { header: 'Previous Value', key: 'oldValue', width: 20 },
+    { header: 'New Value', key: 'newValue', width: 20 },
+    { header: 'Audited Remark', key: 'remark', width: 40 },
+    { header: 'Adjusted By', key: 'userName', width: 20 },
+    { header: 'Role', key: 'roleAtTime', width: 20 },
   ];
 
   data.auditEntries.forEach((entry) => {
     auditSheet.addRow({
-      candidate: entry.candidateName,
+      createdAt: entry.createdAt,
+      candidateName: entry.candidateName,
       field: entry.field,
       oldValue: entry.oldValue,
       newValue: entry.newValue,
       remark: entry.remark,
-      user: `${entry.userName} (${entry.roleAtTime})`,
-      timestamp: entry.createdAt,
+      userName: entry.userName,
+      roleAtTime: entry.roleAtTime,
     });
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
-  return new Uint8Array(buffer);
+  return new Uint8Array(buffer as ArrayBuffer);
 }
 
 /**
- * Generates a clean PDF monthly report using pdf-lib.
+ * Generates a PDF Executive Summary Report.
  */
 export async function generateMonthlyPdfReport(data: MonthlyReportData): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
@@ -220,3 +221,60 @@ export async function generateMonthlyPdfReport(data: MonthlyReportData): Promise
   return await pdfDoc.save();
 }
 
+/**
+ * Browser-side Excel trigger (Admin Only)
+ */
+export async function exportExcelReport(
+  candidates: CandidateRecord[],
+  auditEntries: AuditEntry[] = [],
+  userRole?: UserRole
+) {
+  if (userRole && userRole !== 'ADMIN') {
+    throw new Error('Access Denied: Only users with the Admin role are authorized to download CRM reports.');
+  }
+
+  const buffer = await generateMonthlyExcelReport({
+    month: 'November',
+    year: 2026,
+    candidates,
+    auditEntries,
+  });
+
+  const blob = new Blob([buffer as any], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `NB_BGC_Monthly_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
+ * Browser-side PDF trigger (Admin Only)
+ */
+export async function exportPdfReport(
+  candidates: CandidateRecord[],
+  auditEntries: AuditEntry[] = [],
+  userRole?: UserRole
+) {
+  if (userRole && userRole !== 'ADMIN') {
+    throw new Error('Access Denied: Only users with the Admin role are authorized to download CRM reports.');
+  }
+
+  const pdfBytes = await generateMonthlyPdfReport({
+    month: 'November',
+    year: 2026,
+    candidates,
+    auditEntries,
+  });
+
+  const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `NB_BGC_Executive_Summary_${new Date().toISOString().split('T')[0]}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}

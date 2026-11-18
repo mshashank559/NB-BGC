@@ -16,7 +16,11 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  password?: string;
   role: UserRole;
+  status?: 'ACTIVE' | 'INACTIVE';
+  createdAt?: string;
+  lastLogin?: string;
 }
 
 export interface Installment {
@@ -34,6 +38,9 @@ export interface Installment {
   reminderStatus: ReminderStatus;
   reminderScheduledFor?: string;
   reminderSentAt?: string;
+  reminderDate?: string; // T-2 ISO or YYYY-MM-DD
+  deduction?: DeductionRecord;
+  netCollectedAmount?: number;
 }
 
 export interface PaymentPlan {
@@ -104,6 +111,91 @@ export interface CandidateRecord {
 
   // Embedded Payment Plan
   paymentPlan?: PaymentPlan;
+
+  // BGC Specific Excel Fields (Compliance Desk)
+  poType?: '1 st' | '2 nd' | '3 rd' | 'BGC' | string;
+  bgcOfferAmount?: number;
+  onOfferPaymentDate?: string;
+  totalSlotAmount?: number;
+  totalSlotNumber?: number;
+  isOneShotPayment?: boolean;
+  bgcSlots?: Array<{
+    number: number;
+    amount: number;
+    dueDate: string;
+  }>;
+  bgcDoneBy?: 'Irfan' | 'Deepak' | string;
+  clientEmployerName?: string;
+  bgcCompanyName?: string;
+  bgcStartDate?: string;
+  emailReferenceGiven?: 'Yes' | 'No' | boolean;
+  phoneReferenceGiven?: 'Yes' | 'No' | boolean;
+  bgcEndDate?: string;
+
+  // BGC Payment Settlement & Proof Verification (Accountant Handoff)
+  bgcPaymentStatus?: 'PENDING' | 'PAID';
+  bgcPaymentPaidDate?: string;
+  bgcPaymentRemarks?: string;
+  bgcPaymentProofName?: string;
+  bgcPaymentProofDataUrl?: string; // Data URL or File content string
+  bgcPaymentProofSize?: string;
+  bgcPaymentProofType?: string;
+  bgcPaymentVerifiedBy?: string;
+  bgcPaymentVerifiedByName?: string;
+  bgcPaymentVerifiedAt?: string;
+
+  // Joining Date Management & Reminders
+  joiningDateStatus?: 'SET' | 'TO_BE_UPDATED';
+  joiningDateUpdatedBy?: string;
+  joiningDateUpdatedByName?: string;
+  joiningDateUpdatedAt?: string;
+
+  // Referral Bonus & Payment Deductions
+  referralBonusTotal?: number;
+  referralBonusAllocated?: number;
+  referralBonusRemaining?: number;
+  deductions?: DeductionRecord[];
+}
+
+export type DeductionType = 'REFERRAL_BONUS' | 'DISCOUNT' | 'OTHER' | 'SPLIT';
+
+export interface ReferralSplit {
+  id: string;
+  splitNumber: number;
+  amount: number;
+  status: 'PENDING' | 'PAID';
+  paidDate?: string;
+  notes?: string;
+}
+
+export interface DeductionRecord {
+  id: string;
+  candidateId: string;
+  installmentId?: string;
+  installmentNumber?: number;
+  type: DeductionType;
+  amount: number;
+  salesPerson: string; // Auto-fetched from candidate / PO form
+  refereeNames: string[]; // Multiple referees supported!
+  totalReferralBonus?: number;
+  splits?: ReferralSplit[];
+  allocationStatus?: 'PENDING' | 'PARTIALLY_ALLOCATED' | 'FULLY_ALLOCATED';
+  remarks: string;
+  createdBy: string;
+  createdByName: string;
+  createdAt: string;
+}
+
+export interface JoiningDateReminder {
+  id: string;
+  candidateId: string;
+  candidateName: string;
+  message: string;
+  status: 'ACTIVE' | 'RESOLVED';
+  createdAt: string;
+  resolvedAt?: string;
+  createdBy: string;
+  createdByName: string;
 }
 
 export interface AuditEntry {

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "admin-dwijen",
+    "name": "Dwijen (Admin)",
+    "email": "dwijen@netbounceplacement.com",
+    "password": "admin123",
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "createdAt": "2026-01-15"
+  },
+  {
+    "id": "admin-1",
+    "name": "Admin",
+    "email": "admin@netbounceplacement.com",
+    "password": "admin123",
+    "role": "ADMIN",
+    "status": "ACTIVE",
+    "createdAt": "2026-01-15"
+  },
+  {
+    "id": "cm-1",
+    "name": "Compliance Manager",
+    "email": "compliance@netbounceplacement.com",
+    "password": "compliance123",
+    "role": "COMPLIANCE_MANAGER",
+    "status": "ACTIVE",
+    "createdAt": "2026-02-01"
+  },
+  {
+    "id": "am-1",
+    "name": "Account Manager",
+    "email": "accounts@netbounceplacement.com",
+    "password": "accounts123",
+    "role": "ACCOUNT_MANAGER",
+    "status": "ACTIVE",
+    "createdAt": "2026-02-10"
+  }
+]

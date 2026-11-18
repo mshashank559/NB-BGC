@@ -1,15 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, FileSpreadsheet, Download, FileText, CheckCircle2, ShieldCheck } from 'lucide-react';
-import { CandidateRecord, AuditEntry } from '../types';
-import { generateMonthlyExcelReport, generateMonthlyPdfReport } from '../lib/reportGenerator';
+import { X, FileSpreadsheet, FileText, Download, ShieldCheck, CheckCircle2, Lock, AlertCircle } from 'lucide-react';
+import { CandidateRecord, AuditEntry, UserRole } from '../types';
+import { exportExcelReport, exportPdfReport } from '../lib/reportGenerator';
 
 interface ReportsModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidates: CandidateRecord[];
-  auditEntries: AuditEntry[];
+  auditEntries?: AuditEntry[];
+  userRole?: UserRole;
 }
 
 export const ReportsModal: React.FC<ReportsModalProps> = ({
@@ -17,174 +18,199 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
   onClose,
   candidates,
   auditEntries,
+  userRole = 'ADMIN',
 }) => {
-  const [selectedMonth, setSelectedMonth] = useState('October');
-  const [selectedYear, setSelectedYear] = useState('2026');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [downloadSuccess, setDownloadSuccess] = useState<string>('');
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   if (!isOpen) return null;
 
-  const handleDownloadExcel = async () => {
-    setIsGenerating(true);
-    setDownloadSuccess('');
+  const isAdmin = userRole === 'ADMIN';
+
+  const handleExcel = async () => {
+    if (!isAdmin) {
+      setErrorMsg('Access Denied: Only Admin users are authorized to download CRM reports.');
+      setTimeout(() => setErrorMsg(''), 4000);
+      return;
+    }
     try {
-      const buffer = await generateMonthlyExcelReport({
-        month: selectedMonth,
-        year: Number(selectedYear),
-        candidates,
-        auditEntries,
-      });
-
-      const blob = new Blob([buffer as any], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Compliance_Report_${selectedMonth}_${selectedYear}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setDownloadSuccess('Excel report generated and downloaded successfully!');
-    } catch (err) {
-      console.error(err);
+      setIsExportingExcel(true);
+      setErrorMsg('');
+      await exportExcelReport(candidates, auditEntries, userRole);
+      setSuccessMsg('Excel report successfully generated & downloaded.');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg(e.message || 'Error generating Excel report.');
+      setTimeout(() => setErrorMsg(''), 4000);
     } finally {
-      setIsGenerating(false);
+      setIsExportingExcel(false);
     }
   };
 
-  const handleDownloadPdf = async () => {
-    setIsGenerating(true);
-    setDownloadSuccess('');
+  const handlePdf = async () => {
+    if (!isAdmin) {
+      setErrorMsg('Access Denied: Only Admin users are authorized to download CRM reports.');
+      setTimeout(() => setErrorMsg(''), 4000);
+      return;
+    }
     try {
-      const pdfBytes = await generateMonthlyPdfReport({
-        month: selectedMonth,
-        year: Number(selectedYear),
-        candidates,
-        auditEntries,
-      });
-
-      const blob = new Blob([pdfBytes as any], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Compliance_Report_${selectedMonth}_${selectedYear}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setDownloadSuccess('PDF report generated and downloaded successfully!');
-    } catch (err) {
-      console.error(err);
+      setIsExportingPdf(true);
+      setErrorMsg('');
+      await exportPdfReport(candidates, auditEntries, userRole);
+      setSuccessMsg('PDF summary successfully generated & downloaded.');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg(e.message || 'Error generating PDF report.');
+      setTimeout(() => setErrorMsg(''), 4000);
     } finally {
-      setIsGenerating(false);
+      setIsExportingPdf(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-xl bg-[#0d1424] border border-cyan-500/30 rounded-3xl shadow-[0_30px_100px_rgba(0,0,0,0.95)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+      <div className="relative w-full max-w-lg bg-white/95 backdrop-blur-2xl border border-white/80 rounded-[28px] shadow-[0_25px_60px_rgba(15,23,42,0.15)] overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-slate-900">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-slate-900/80">
+        <div className="px-6 py-5 border-b border-black/[0.06] flex items-center justify-between bg-slate-50/60">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-              <FileSpreadsheet className="h-5 w-5" />
+            <div className="h-10 w-10 rounded-2xl bg-blue-50 border border-blue-200/70 flex items-center justify-center text-blue-600 shadow-xs">
+              <Download className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Admin Monthly Compliance & Financial Reports</h2>
-              <p className="text-[11px] text-cyan-400 font-medium">Export Complete Operational & Audit Records</p>
+              <h2 className="text-sm font-bold text-slate-900 tracking-tight">Compliance & Accounting Reports</h2>
+              <p className="text-[11px] text-slate-500 font-medium">PII-Compliant Monthly Exports</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+            className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200/80 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Content */}
+        {/* Body */}
         <div className="p-6 space-y-4 text-xs">
-          {/* Month & Year Selection */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Select Month</label>
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 text-xs"
-              >
-                {[
-                  'January', 'February', 'March', 'April', 'May', 'June',
-                  'July', 'August', 'September', 'October', 'November', 'December'
-                ].map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+          {!isAdmin && (
+            <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 flex items-start gap-3 text-amber-900 shadow-xs">
+              <div className="h-8 w-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0 mt-0.5">
+                <Lock className="h-4 w-4" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="font-extrabold text-xs text-amber-950">Export Restricted to Admin Role</h4>
+                <p className="text-[11px] text-amber-800 leading-relaxed font-medium">
+                  Your current account role (<strong>{userRole}</strong>) allows viewing ledger and reporting data, but exporting datasets, Excel, and PDF files is strictly restricted to Administrator accounts.
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Select Year</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 text-xs"
-              >
-                {['2025', '2026', '2027'].map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+          )}
+
+          <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-200/70 space-y-1.5">
+            <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span>Automatic PII Redaction Guaranteed</span>
             </div>
-          </div>
-
-          {/* Privacy Notice */}
-          <div className="p-3.5 rounded-2xl bg-cyan-950/30 border border-cyan-500/20 text-slate-300 flex items-start gap-2.5">
-            <ShieldCheck className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
-            <div className="text-[11px]">
-              <p className="font-semibold text-cyan-300 mb-0.5">Privacy & Compliance Enforced</p>
-              <p className="text-slate-400">
-                Personal emails and personal phone numbers are automatically stripped from exported files as per Section 12 privacy rules.
-              </p>
-            </div>
-          </div>
-
-          {/* Download Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <button
-              onClick={handleDownloadPdf}
-              disabled={isGenerating}
-              className="flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-rose-500/20 hover:border-rose-500/40 text-rose-300 font-bold transition-all shadow-spatial-card"
-            >
-              <FileText className="h-4 w-4 text-rose-400" />
-              Download PDF Report
-            </button>
-
-            <button
-              onClick={handleDownloadExcel}
-              disabled={isGenerating}
-              className="flex items-center justify-center gap-2 p-3.5 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-300 font-bold transition-all shadow-spatial-card"
-            >
-              <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
-              Download Excel Report
-            </button>
-          </div>
-
-          {downloadSuccess && (
-            <p className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold flex items-center gap-1.5 animate-in fade-in">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              {downloadSuccess}
+            <p className="text-emerald-700 text-[11px] leading-relaxed font-medium">
+              Exported files automatically strip personal phone numbers and private email addresses. Only professional placement, client, and financial installment schedules are retained for internal audit and accounting purposes.
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {/* Excel Export */}
+            <div className={`p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-col justify-between space-y-3 transition-all shadow-xs ${isAdmin ? 'hover:border-emerald-500/50 hover:bg-emerald-50/30' : 'opacity-70'}`}>
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <FileSpreadsheet className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-xs">Excel (.xlsx)</h4>
+                  <p className="text-[10px] text-slate-500 font-medium">Full reconciliation table</p>
+                </div>
+              </div>
+              <button
+                onClick={handleExcel}
+                disabled={isExportingExcel || !isAdmin}
+                title={!isAdmin ? 'Admin privilege required to download' : 'Download Excel report'}
+                className={`w-full py-2 px-3 rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 shadow-xs ${
+                  isAdmin
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                }`}
+              >
+                {!isAdmin ? (
+                  <>
+                    <Lock className="h-3.5 w-3.5" />
+                    Admin Only
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-3.5 w-3.5" />
+                    {isExportingExcel ? 'Generating...' : 'Download Excel'}
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* PDF Export */}
+            <div className={`p-4 bg-slate-50/80 rounded-2xl border border-slate-200/80 flex flex-col justify-between space-y-3 transition-all shadow-xs ${isAdmin ? 'hover:border-rose-500/50 hover:bg-rose-50/30' : 'opacity-70'}`}>
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 text-xs">PDF Summary</h4>
+                  <p className="text-[10px] text-slate-500 font-medium">Management memo</p>
+                </div>
+              </div>
+              <button
+                onClick={handlePdf}
+                disabled={isExportingPdf || !isAdmin}
+                title={!isAdmin ? 'Admin privilege required to download' : 'Download PDF summary'}
+                className={`w-full py-2 px-3 rounded-xl font-bold transition-all text-xs flex items-center justify-center gap-1.5 shadow-xs ${
+                  isAdmin
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed border border-slate-300'
+                }`}
+              >
+                {!isAdmin ? (
+                  <>
+                    <Lock className="h-3.5 w-3.5" />
+                    Admin Only
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-3.5 w-3.5" />
+                    {isExportingPdf ? 'Generating...' : 'Download PDF'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-[11px] font-medium">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-600" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-[11px] font-medium">
+              <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-emerald-600" />
+              <span>{successMsg}</span>
+            </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-white/10 bg-slate-900/80 flex items-center justify-end">
+        <div className="px-6 py-4 border-t border-black/[0.06] bg-slate-50/60 flex items-center justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all"
+            className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all border border-slate-200/80 text-xs shadow-xs"
           >
             Close
           </button>
@@ -193,4 +219,3 @@ export const ReportsModal: React.FC<ReportsModalProps> = ({
     </div>
   );
 };
-

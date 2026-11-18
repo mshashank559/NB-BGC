@@ -10,11 +10,12 @@ export function addDaysToDateString(baseDate: string, days: number): string {
 }
 
 /**
- * Calculates email reminder date (Due Date minus 2 days).
+ * Calculates email reminder date (Due Date minus 3 days for T-3 dispatch in IST,
+ * ensuring US/Canada candidate receives reminder 2 full business days before due date in EST).
  */
 export function calculateReminderDate(dueDateString: string): string {
   const dueDate = parseISO(dueDateString);
-  return format(subDays(dueDate, 2), 'yyyy-MM-dd');
+  return format(subDays(dueDate, 3), 'yyyy-MM-dd');
 }
 
 /**

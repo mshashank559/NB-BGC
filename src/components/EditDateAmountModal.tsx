@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Edit3, Calendar, DollarSign, AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
+import { X, Edit3, AlertCircle, AlertTriangle } from 'lucide-react';
 import { Installment, CandidateRecord } from '../types';
 
 interface EditDateAmountModalProps {
@@ -9,7 +9,14 @@ interface EditDateAmountModalProps {
   onClose: () => void;
   candidate: CandidateRecord | null;
   installment: Installment | null;
-  onSaveEdit: (
+  onConfirmEdit?: (
+    candidateId: string,
+    installmentId: string,
+    newAmount: number,
+    newDueDate: string,
+    remark: string
+  ) => void;
+  onSaveEdit?: (
     candidateId: string,
     installmentId: string,
     newAmount: number,
@@ -23,150 +30,163 @@ export const EditDateAmountModal: React.FC<EditDateAmountModalProps> = ({
   onClose,
   candidate,
   installment,
+  onConfirmEdit,
   onSaveEdit,
 }) => {
-  const [amount, setAmount] = useState<number>(installment?.amount || 0);
-  const [dueDate, setDueDate] = useState<string>(installment?.dueDate || '');
+  if (!isOpen || !candidate || !installment) return null;
+
+  const [amount, setAmount] = useState<number>(installment.amount);
+  const [dueDate, setDueDate] = useState<string>(installment.dueDate);
   const [remark, setRemark] = useState<string>('');
   const [error, setError] = useState<string>('');
 
-  if (!isOpen || !candidate || !installment) return null;
-
-  const totalPayable = candidate.paymentPlan?.totalPayable || 0;
-  const currentInstallments = candidate.paymentPlan?.installments || [];
-
-  // Calculate new total if this slot amount is updated
-  const otherSum = currentInstallments
-    .filter((i) => i.id !== installment.id)
-    .reduce((sum, i) => sum + i.amount, 0);
-  const projectedTotal = otherSum + (Number(amount) || 0);
-  const mismatch = Math.abs(projectedTotal - totalPayable);
-  const hasMismatch = mismatch > 0.01;
+  const totalAgreed = candidate.paymentPlan?.totalPayable || candidate.upfrontAmount;
+  const currentTotal = (candidate.paymentPlan?.installments || []).reduce(
+    (sum, inst) => (inst.id === installment.id ? sum + amount : sum + inst.amount),
+    0
+  );
+  const hasMismatch = Math.abs(currentTotal - totalAgreed) > 0.01;
 
   const handleSave = () => {
-    if (!remark.trim() || remark.trim().length < 5) {
-      setError('A mandatory remark with at least 5 characters is required for any date/amount edit.');
-      return;
-    }
-    if (Number(amount) <= 0) {
+    if (amount <= 0) {
       setError('Installment amount must be greater than $0.');
       return;
     }
     if (!dueDate) {
-      setError('Please select a valid due date.');
+      setError('Please provide a valid due date.');
       return;
     }
-    if (hasMismatch) {
-      setError(`Amount mismatch! Total of installments must equal $${totalPayable.toLocaleString()} (Current: $${projectedTotal.toLocaleString()}).`);
+    if (!remark || remark.trim().length < 5) {
+      setError('Mandatory audit compliance rule: A reason of at least 5 characters is required.');
       return;
     }
 
     setError('');
-    onSaveEdit(candidate.id, installment.id, Number(amount), dueDate, remark.trim());
+    const saveFn = onSaveEdit || onConfirmEdit;
+    if (saveFn) {
+      saveFn(candidate.id, installment.id, amount, dueDate, remark.trim());
+    }
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-md bg-[#0d1424] border border-cyan-500/30 rounded-3xl shadow-[0_25px_80px_rgba(0,242,254,0.15)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+      <div className="relative w-full max-w-lg bg-white/95 backdrop-blur-2xl border border-white/80 rounded-[30px] shadow-[0_20px_50px_rgba(15,23,42,0.15)] overflow-hidden animate-in fade-in zoom-in-95 duration-200 text-slate-900">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between bg-slate-900/60">
+        <div className="px-6 py-4 border-b border-black/[0.06] flex items-center justify-between bg-slate-50/60">
           <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+            <div className="h-10 w-10 rounded-2xl bg-blue-50 border border-blue-200/70 flex items-center justify-center text-blue-600 shadow-xs">
               <Edit3 className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Edit Installment #{installment.number}</h2>
-              <p className="text-[11px] text-cyan-400 font-medium">{candidate.candidateName}</p>
+              <h2 className="text-sm font-bold text-slate-900 tracking-tight">Edit Installment Slot #{installment.number}</h2>
+              <p className="text-[11px] text-slate-500 font-medium">Mandatory Audit Rule: Reason &gt;= 5 chars</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+            className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 border border-slate-200/80 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Content */}
+        {/* Form Body */}
         <div className="p-6 space-y-4 text-xs">
-          {/* Amount Input */}
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
-              <DollarSign className="h-3.5 w-3.5 text-cyan-400" />
-              Installment Amount ($) *
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(Number(e.target.value))}
-              className="w-full bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 text-xs font-mono"
-            />
-            {hasMismatch && (
-              <p className="mt-1 text-[10px] text-amber-400 font-medium">
-                Running Total: ${projectedTotal.toLocaleString()} (Expected: ${totalPayable.toLocaleString()})
-              </p>
-            )}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                Installment Amount ($) <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                step="0.01"
+                value={amount === 0 ? '' : amount}
+                onChange={(e) => {
+                  const clean = e.target.value.replace(/^0+(?=\d)/, '');
+                  setAmount(clean === '' ? 0 : parseFloat(clean));
+                }}
+                className="w-full bg-white border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono shadow-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                Due Date <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-white border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono shadow-xs"
+              />
+            </div>
           </div>
 
-          {/* Due Date Input */}
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-300 mb-1.5 flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5 text-cyan-400" />
-              Installment Due Date *
-            </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 text-xs font-mono"
-            />
-            <p className="mt-1 text-[10px] text-slate-500">
-              Note: Email reminder will automatically reschedule to 2 days prior @ 09:00 IST.
-            </p>
-          </div>
+          {/* Balance Mismatch Alert */}
+          {hasMismatch && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] flex items-start gap-2 shadow-xs">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5 text-amber-600" />
+              <div>
+                <strong>Balance Mismatch Alert:</strong> Total sum of installments is now{' '}
+                <span className="font-mono font-bold">${currentTotal.toLocaleString()}</span>, but total payable agreed is{' '}
+                <span className="font-mono font-bold">${totalAgreed.toLocaleString()}</span> (Difference: ${(
+                  currentTotal - totalAgreed
+                ).toLocaleString()}).
+              </div>
+            </div>
+          )}
 
-          {/* Mandatory Remark */}
           <div>
-            <label className="block text-[11px] font-bold text-amber-400 mb-1.5">
-              Mandatory Remark (Min 5 characters) *
-            </label>
+            <div className="flex justify-between items-center mb-1.5">
+              <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                Mandatory Reason / Remark <span className="text-rose-500">*</span>
+              </label>
+              <span
+                className={`text-[10px] font-mono font-bold ${
+                  remark.trim().length >= 5 ? 'text-emerald-600' : 'text-slate-400'
+                }`}
+              >
+                {remark.trim().length}/5 chars min
+              </span>
+            </div>
             <textarea
-              rows={2}
+              rows={3}
+              placeholder="e.g. Approved extension by management due to delayed client invoicing."
               value={remark}
               onChange={(e) => setRemark(e.target.value)}
-              placeholder="e.g. Due date adjusted by 10 days upon candidate request."
-              className="w-full bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 text-xs"
+              className="w-full bg-white border border-slate-200/80 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all resize-none shadow-xs"
             />
+            <p className="text-[10px] text-slate-500 mt-1">
+              * This reason will be permanently sealed into the system&apos;s immutable audit trail with your timestamp.
+            </p>
           </div>
 
           {error && (
-            <p className="text-[11px] text-rose-400 flex items-center gap-1 font-medium bg-rose-500/10 p-2 rounded-xl border border-rose-500/20">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              {error}
-            </p>
+            <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-[11px]">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-600" />
+              <span>{error}</span>
+            </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-white/10 bg-slate-900/80 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 border-t border-black/[0.06] bg-slate-50/60 flex items-center justify-end gap-2.5">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-transparent hover:bg-white/5 text-slate-400 text-xs font-semibold transition-all"
+            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-all border border-slate-200/80 text-xs shadow-xs"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 text-xs font-bold shadow-[0_0_20px_rgba(0,242,254,0.3)] transition-all"
+            disabled={remark.trim().length < 5}
+            className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold transition-all text-xs flex items-center gap-1.5 shadow-[0_4px_16px_rgba(37,99,235,0.25)]"
           >
-            <CheckCircle2 className="h-4 w-4" />
-            Save Changes & Log Audit
+            Save Adjustment
           </button>
         </div>
       </div>
     </div>
   );
 };
-

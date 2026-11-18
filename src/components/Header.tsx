@@ -1,14 +1,15 @@
 'use client';
 
 import React from 'react';
-import { Search, ShieldAlert, Sparkles, UserCheck, KeyRound } from 'lucide-react';
-import { UserRole } from '../types';
+import { History } from 'lucide-react';
+import { UserRole, User } from '../types';
 
 interface HeaderProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
   userRole: UserRole;
-  onChangeRole: (role: UserRole) => void;
+  currentUser?: User;
+  onChangeRole?: (role: UserRole) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   onOpenNewPoModal: () => void;
@@ -19,131 +20,55 @@ export const Header: React.FC<HeaderProps> = ({
   currentTab,
   onSelectTab,
   userRole,
+  currentUser,
   onChangeRole,
-  searchQuery,
-  onSearchChange,
   onOpenNewPoModal,
   onOpenAuditModal,
 }) => {
+  const cleanName = currentUser?.name
+    ? currentUser.name.replace(/\s*\(.*?\)/, '').trim()
+    : 'Admin';
+
   return (
-    <header className="px-6 py-4 border-b border-white/5 bg-[#0a101b]/70 backdrop-blur-2xl flex flex-wrap items-center justify-between gap-4">
-      {/* Center Sub-Navigation Tabs */}
-      <div className="flex items-center gap-1.5 bg-[#070b13]/80 p-1.5 rounded-2xl border border-white/5">
-        <button
-          onClick={() => onSelectTab('overview')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
-            currentTab === 'overview'
-              ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/15 text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(0,242,254,0.2)]'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          Living Dashboard
-        </button>
-
-        {userRole !== 'COMPLIANCE_MANAGER' && (
-          <button
-            onClick={() => onSelectTab('collection')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
-              currentTab === 'collection'
-                ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/15 text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(0,242,254,0.2)]'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Collection Hub
-          </button>
-        )}
-
-        <button
-          onClick={() => onSelectTab('candidates')}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
-            currentTab === 'candidates'
-              ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/15 text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(0,242,254,0.2)]'
-              : 'text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          Candidate Ledger
-        </button>
-
-        {userRole !== 'ACCOUNT_MANAGER' && (
-          <button
-            onClick={onOpenNewPoModal}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-cyan-300 transition-all flex items-center gap-1"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            PO Detail Form
-          </button>
-        )}
-
-        {userRole === 'ADMIN' && (
-          <button
-            onClick={onOpenAuditModal}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
-              currentTab === 'audit'
-                ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/15 text-cyan-300 border border-cyan-500/40'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Audit Trail
-          </button>
-        )}
+    <header className="py-2 mb-6 flex flex-wrap items-center justify-between gap-4 select-none border-b border-black/[0.04] pb-4">
+      {/* Left Title: Personalized Welcome Greeting */}
+      <div className="flex items-center gap-3">
+        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+        <h1 className="text-lg font-bold tracking-tight text-slate-900 heading-tight">
+          Welcome, <span className="text-blue-600 font-extrabold">{cleanName}</span>
+        </h1>
+        <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-50/70 backdrop-blur-md text-blue-700 font-semibold border border-blue-200/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9)]">
+          {userRole === 'ADMIN' ? 'Admin Workspace' : userRole === 'COMPLIANCE_MANAGER' ? 'Compliance Desk' : 'Accounts Desk'}
+        </span>
       </div>
 
-      {/* Right Section: Search & 1-Click Role Switcher */}
-      <div className="flex items-center gap-3 ml-auto">
-        {/* Search */}
-        <div className="relative hidden md:block">
-          <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search candidate, client, role..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-56 bg-slate-900/60 border border-white/10 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
-          />
+      {/* Right Action Icons */}
+      <div className="flex items-center gap-2.5">
+        {/* User Avatar with Initials */}
+        <div
+          title={currentUser?.name || 'User Profile'}
+          className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#111B45] via-[#1E40AF] to-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-[0_2px_8px_rgba(17,27,69,0.25)] border border-white/90 cursor-pointer select-none transition-transform hover:scale-105"
+        >
+          {cleanName
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase()}
         </div>
 
-        {/* 1-Click Role Switcher */}
-        <div className="flex items-center gap-1 bg-slate-900/90 border border-white/10 p-1 rounded-2xl shadow-inner">
-          <div className="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-slate-400">
-            <KeyRound className="h-3 w-3 text-cyan-400" />
-            <span className="hidden lg:inline uppercase tracking-wider text-[10px]">Role:</span>
-          </div>
-
+        {/* Audit Trail Button */}
+        {onOpenAuditModal && (
           <button
-            onClick={() => onChangeRole('ADMIN')}
-            className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
-              userRole === 'ADMIN'
-                ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(0,242,254,0.4)]'
-                : 'text-slate-400 hover:text-white'
-            }`}
+            onClick={onOpenAuditModal}
+            title="View Full System Audit Trail & History"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 hover:bg-slate-100 border border-slate-200/90 text-slate-700 font-bold text-xs transition-all shadow-xs cursor-pointer ml-1"
           >
-            Admin
+            <History className="w-3.5 h-3.5 text-blue-600" />
+            <span>Audit Trail</span>
           </button>
-
-          <button
-            onClick={() => onChangeRole('COMPLIANCE_MANAGER')}
-            className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
-              userRole === 'COMPLIANCE_MANAGER'
-                ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(0,242,254,0.4)]'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Compliance
-          </button>
-
-          <button
-            onClick={() => onChangeRole('ACCOUNT_MANAGER')}
-            className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all ${
-              userRole === 'ACCOUNT_MANAGER'
-                ? 'bg-gradient-to-r from-cyan-400 to-blue-500 text-slate-950 font-bold shadow-[0_0_15px_rgba(0,242,254,0.4)]'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Accounts
-          </button>
-        </div>
+        )}
       </div>
     </header>
   );
 };
-
