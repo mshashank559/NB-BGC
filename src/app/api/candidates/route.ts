@@ -30,9 +30,14 @@ async function fetchFromSupabase(): Promise<CandidateRecord[] | null> {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0 && data[0]?.remarks) {
         const parsed = JSON.parse(data[0].remarks);
+        if (Array.isArray(parsed?.candidates)) {
+          return parsed.candidates;
+        }
         if (Array.isArray(parsed)) {
           return parsed;
         }
+      } else if (Array.isArray(data) && data.length === 0) {
+        return [];
       }
     }
   } catch (err) {
@@ -44,6 +49,18 @@ async function fetchFromSupabase(): Promise<CandidateRecord[] | null> {
 // 2. Persist candidates snapshot to Supabase Cloud DB
 async function saveToSupabase(candidates: CandidateRecord[]): Promise<void> {
   try {
+    // Delete older snapshots to maintain single clean state
+    await fetch(`${SUPABASE_URL}/rest/v1/audit_entries?action_type=eq.CANDIDATES_CLOUD_STATE`, {
+      method: 'DELETE',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+    });
+
+    // Wrapper ensures payload satisfies check constraint (char_length(remarks) >= 5)
+    const payload = JSON.stringify({ candidates });
+
     const res = await fetch(`${SUPABASE_URL}/rest/v1/audit_entries`, {
       method: 'POST',
       headers: {
@@ -54,7 +71,7 @@ async function saveToSupabase(candidates: CandidateRecord[]): Promise<void> {
       body: JSON.stringify({
         candidate_id: 'c1111111-1111-1111-1111-111111111111',
         action_type: 'CANDIDATES_CLOUD_STATE',
-        remarks: JSON.stringify(candidates),
+        remarks: payload,
         changed_by: '00000000-0000-0000-0000-000000000001',
       }),
     });
@@ -138,7 +155,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     let currentCandidates = await getStoredCandidates();
 
-    if (body.candidates && Array.isArray(body.candidates)) {
+    if (Array.isArray(body)) {
+      // Direct full array update
+      currentCandidates = body;
+    } else if (body.candidates && Array.isArray(body.candidates)) {
       // Direct full array update
       currentCandidates = body.candidates;
     } else if (body.action === 'UPSERT' && body.candidate) {
@@ -150,6 +170,9 @@ export async function POST(request: Request) {
       }
     } else if (body.action === 'DELETE' && body.candidateId) {
       currentCandidates = currentCandidates.filter((c) => c.id !== body.candidateId);
+      if (Array.isArray(body.candidates)) {
+        currentCandidates = body.candidates;
+      }
     } else if (body.id) {
       // Single candidate upsert
       const idx = currentCandidates.findIndex((c) => c.id === body.id);

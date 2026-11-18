@@ -293,17 +293,10 @@ export default function DashboardPage() {
     setCountUpTrigger((prev) => prev + 1);
   };
 
-  // Core Data States (Persisted in DB & localStorage, clean initial state)
+  // Core Data States (Server DB is single source of truth)
   const [candidatesLoaded, setCandidatesLoaded] = useState(false);
-  const [candidates, setCandidates] = useState<CandidateRecord[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem('nb_bgc_candidates_list');
-        if (saved) return JSON.parse(saved);
-      } catch (e) {}
-    }
-    return [];
-  });
+  const [candidates, setCandidates] = useState<CandidateRecord[]>([]);
+  const isSyncingFromServerRef = React.useRef(false);
 
   // Real-Time Live Sync: Supabase Realtime Channel + 3-sec Polling + Window Focus
   React.useEffect(() => {
@@ -321,6 +314,8 @@ export default function DashboardPage() {
               if (prevStr === nextStr) {
                 return prev; // No changes, prevent unnecessary re-render
               }
+              // Mark flag so useEffect does NOT post back to server
+              isSyncingFromServerRef.current = true;
               // Data changed live! Trigger smooth count-up animation on KPI cards
               setCountUpTrigger((c) => c + 1);
               try {
@@ -378,9 +373,13 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // Persist Candidates to localStorage & Server DB on changes
+  // Persist Candidates to localStorage & Server DB on changes (user mutations only)
   React.useEffect(() => {
     if (!mounted || !candidatesLoaded) return;
+    if (isSyncingFromServerRef.current) {
+      isSyncingFromServerRef.current = false;
+      return; // Do NOT post back what we just received from server sync!
+    }
     try {
       localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(candidates));
       fetch('/api/candidates', {
@@ -662,6 +661,7 @@ export default function DashboardPage() {
 
   // Handler: Delete Candidate (Instantly removes from local state, localStorage, and Supabase cloud DB)
   const handleDeleteCandidate = async (candidateId: string) => {
+    isSyncingFromServerRef.current = false;
     const updated = candidates.filter((c) => c.id !== candidateId);
     setCandidates(updated);
     setCountUpTrigger((c) => c + 1);
