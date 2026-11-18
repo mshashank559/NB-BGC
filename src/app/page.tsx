@@ -664,6 +664,7 @@ export default function DashboardPage() {
   const handleDeleteCandidate = async (candidateId: string) => {
     const updated = candidates.filter((c) => c.id !== candidateId);
     setCandidates(updated);
+    setCountUpTrigger((c) => c + 1);
     try {
       localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(updated));
     } catch (e) {}
