@@ -608,9 +608,23 @@ export default function DashboardPage() {
     setAuditEntries((prev) => [newAudit, ...prev]);
   };
 
-  // Handler: Delete Candidate
-  const handleDeleteCandidate = (candidateId: string) => {
-    setCandidates((prev) => prev.filter((c) => c.id !== candidateId));
+  // Handler: Delete Candidate (Instantly removes from local state, localStorage, and Supabase cloud DB)
+  const handleDeleteCandidate = async (candidateId: string) => {
+    const updated = candidates.filter((c) => c.id !== candidateId);
+    setCandidates(updated);
+    try {
+      localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(updated));
+    } catch (e) {}
+
+    try {
+      await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'DELETE', candidateId }),
+      });
+    } catch (e) {
+      console.error('Failed to delete candidate from cloud database:', e);
+    }
   };
 
   // Handler: Collect Payment directly from Ledger

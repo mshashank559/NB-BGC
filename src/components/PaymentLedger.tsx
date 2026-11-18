@@ -13,6 +13,7 @@ import {
   Edit3,
   Trash2,
 } from 'lucide-react';
+import { DeleteCandidateModal } from './DeleteCandidateModal';
 
 interface PaymentLedgerProps {
   candidates: CandidateRecord[];
@@ -38,6 +39,7 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
   searchQuery,
 }) => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'SUBMITTED' | 'CLOSED' | 'OVERDUE'>('ALL');
+  const [candidateToDelete, setCandidateToDelete] = useState<CandidateRecord | null>(null);
 
   const scopedCandidates = candidates.filter((cand) => {
     if (userRole === 'ACCOUNT_MANAGER') {
@@ -392,11 +394,7 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
                           {/* Delete */}
                           {onDeleteCandidate && (
                             <button
-                              onClick={() => {
-                                if (window.confirm(`Are you sure you want to delete ${cand.candidateName}?`)) {
-                                  onDeleteCandidate(cand.id);
-                                }
-                              }}
+                              onClick={() => setCandidateToDelete(cand)}
                               title="Delete Record"
                               className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800 transition-all cursor-pointer shadow-2xs"
                             >
@@ -685,11 +683,7 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
                         {/* 4. Delete Button */}
                         {onDeleteCandidate && (
                           <button
-                            onClick={() => {
-                              if (window.confirm(`Are you sure you want to delete ${cand.candidateName}?`)) {
-                                onDeleteCandidate(cand.id);
-                              }
-                            }}
+                            onClick={() => setCandidateToDelete(cand)}
                             title="Delete Record"
                             className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800 transition-all cursor-pointer shadow-2xs"
                           >
@@ -705,6 +699,18 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Modern High-End Delete Confirmation Modal */}
+      <DeleteCandidateModal
+        isOpen={candidateToDelete !== null}
+        candidate={candidateToDelete}
+        onClose={() => setCandidateToDelete(null)}
+        onConfirmDelete={(id) => {
+          if (onDeleteCandidate) {
+            onDeleteCandidate(id);
+          }
+        }}
+      />
     </div>
   );
 };
