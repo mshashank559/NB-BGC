@@ -40,13 +40,16 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'SUBMITTED' | 'CLOSED' | 'OVERDUE'>('ALL');
 
   const scopedCandidates = candidates.filter((cand) => {
-    if (userRole === 'COMPLIANCE_MANAGER') {
-      return cand.createdBy === currentUserId || cand.createdBy === 'cm-1';
-    }
     if (userRole === 'ACCOUNT_MANAGER') {
-      return cand.status === 'SUBMITTED' || cand.status === 'CLOSED';
+      // Mandatory Gate: Candidate is ONLY handed off to Accountant when BGC is fully CLEARED!
+      const isBgcCleared = cand.bgcOfferStatus === 'CLEARED' || cand.bgcPaymentStatus === 'PAID';
+      return isBgcCleared && (cand.status === 'SUBMITTED' || cand.status === 'CLOSED');
     }
-    return true; // Admin
+    if (userRole === 'COMPLIANCE_MANAGER') {
+      // Compliance Desk sees all candidates in the compliance & onboarding pipeline
+      return true;
+    }
+    return true; // Admin sees all candidates across all stages
   });
 
   const filteredCandidates = scopedCandidates.filter((cand) => {

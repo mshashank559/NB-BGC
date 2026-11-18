@@ -304,20 +304,26 @@ export default function DashboardPage() {
     return [];
   });
 
-  // Load Candidates from Server DB (/api/candidates) on mount
+  // Load Candidates from Server DB (/api/candidates) on mount & window focus
   React.useEffect(() => {
-    fetch('/api/candidates')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success && Array.isArray(data.candidates)) {
-          setCandidates(data.candidates);
-          try {
-            localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(data.candidates));
-          } catch (e) {}
-        }
-      })
-      .catch((err) => console.error('Failed to load candidates from DB:', err))
-      .finally(() => setCandidatesLoaded(true));
+    const syncCandidates = () => {
+      fetch('/api/candidates')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success && Array.isArray(data.candidates)) {
+            setCandidates(data.candidates);
+            try {
+              localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(data.candidates));
+            } catch (e) {}
+          }
+        })
+        .catch((err) => console.error('Failed to sync candidates from DB:', err))
+        .finally(() => setCandidatesLoaded(true));
+    };
+
+    syncCandidates();
+    window.addEventListener('focus', syncCandidates);
+    return () => window.removeEventListener('focus', syncCandidates);
   }, []);
 
   // Persist Candidates to localStorage & Server DB on changes
@@ -369,13 +375,21 @@ export default function DashboardPage() {
     }
   };
 
-  // Compute Master KPIs across candidates
+  // Compute Master KPIs across candidates (role-scoped for Accountant / Compliance / Admin)
   const { totalPayable, totalCollected, pendingBalance, overdueCount } = useMemo(() => {
     let payable = 0;
     let collected = 0;
     let overdue = 0;
 
-    candidates.forEach((c) => {
+    const visibleCandidates = candidates.filter((c) => {
+      if (currentUser.role === 'ACCOUNT_MANAGER') {
+        const isBgcCleared = c.bgcOfferStatus === 'CLEARED' || c.bgcPaymentStatus === 'PAID';
+        return isBgcCleared && c.status !== 'DRAFT';
+      }
+      return true;
+    });
+
+    visibleCandidates.forEach((c) => {
       if (c.status === 'DRAFT') return;
       const plan = c.paymentPlan;
       if (plan) {
@@ -399,7 +413,17 @@ export default function DashboardPage() {
       pendingBalance: balance,
       overdueCount: overdue,
     };
-  }, [candidates]);
+  }, [candidates, currentUser.role]);
+
+  // Candidates scoped for Dashboard charts and cards
+  const scopedForDashboard = useMemo(() => {
+    if (currentUser.role === 'ACCOUNT_MANAGER') {
+      return candidates.filter(
+        (c) => (c.bgcOfferStatus === 'CLEARED' || c.bgcPaymentStatus === 'PAID') && c.status !== 'DRAFT'
+      );
+    }
+    return candidates;
+  }, [candidates, currentUser.role]);
 
   // Active Joining Date Reminders
   const activeJoiningReminders = useMemo(() => {
@@ -1366,9 +1390,7 @@ export default function DashboardPage() {
                   overdueCount={overdueCount}
                   userRole={currentUser.role}
                   countUpTrigger={countUpTrigger}
-                  scopedCandidates={candidates.filter((c) =>
-                    currentUser.role === 'COMPLIANCE_MANAGER' ? c.createdBy === currentUser.id : true
-                  )}
+                  scopedCandidates={scopedForDashboard}
                 />
               )}
 
@@ -1471,9 +1493,7 @@ export default function DashboardPage() {
                       total={totalPayable}
                       userRole={currentUser.role}
                       countUpTrigger={countUpTrigger}
-                      scopedCandidates={candidates.filter((c) =>
-                        currentUser.role === 'COMPLIANCE_MANAGER' ? c.createdBy === currentUser.id : true
-                      )}
+                      scopedCandidates={scopedForDashboard}
                     />
                   </motion.div>
                   <motion.div
@@ -1493,9 +1513,7 @@ export default function DashboardPage() {
                       totalPayable={totalPayable}
                       userRole={currentUser.role}
                       countUpTrigger={countUpTrigger}
-                      scopedCandidates={candidates.filter((c) =>
-                        currentUser.role === 'COMPLIANCE_MANAGER' ? c.createdBy === currentUser.id : true
-                      )}
+                      scopedCandidates={scopedForDashboard}
                     />
                   </motion.div>
                   <motion.div
