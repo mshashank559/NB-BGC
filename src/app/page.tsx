@@ -1557,11 +1557,7 @@ export default function DashboardPage() {
                     searchQuery={searchQuery}
                     onOpenCandidateDetail={(cand) => {
                       setSelectedCandidate(cand);
-                      if (currentUser.role === 'COMPLIANCE_MANAGER') {
-                        setIsBgcDetailModalOpen(true);
-                      } else {
-                        setIsCandidateDetailModalOpen(true);
-                      }
+                      setIsCandidateDetailModalOpen(true);
                     }}
                     onOpenNewPoModal={() => {
                       setEditingDraft(null);
@@ -1644,6 +1640,10 @@ export default function DashboardPage() {
               }}
               onUpdateJoiningDate={handleUpdateJoiningDate}
               onMarkJoiningDatePending={handleMarkJoiningDatePending}
+              onOpenBgcDetail={(cand) => {
+                setSelectedCandidate(cand);
+                setIsBgcDetailModalOpen(true);
+              }}
             />
 
             {activeCandidate && selectedInstallment && (
@@ -1717,6 +1717,11 @@ export default function DashboardPage() {
               }}
               onViewProof={(dataUrl, title) => {
                 setProofViewer({ isOpen: true, title, dataUrl });
+              }}
+              onOpenLedgerDetail={(cand) => {
+                setIsBgcDetailModalOpen(false);
+                setSelectedCandidate(cand);
+                setIsCandidateDetailModalOpen(true);
               }}
             />
 

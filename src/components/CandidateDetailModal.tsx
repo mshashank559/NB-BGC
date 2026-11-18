@@ -25,6 +25,7 @@ import {
   Layers,
   History,
   ExternalLink,
+  ShieldCheck,
 } from 'lucide-react';
 import { CandidateRecord, Installment, UserRole, DeductionRecord } from '../types';
 
@@ -43,6 +44,7 @@ interface CandidateDetailModalProps {
   onViewProof?: (url: string, name: string) => void;
   onUpdateJoiningDate?: (candidateId: string, newDate: string) => void;
   onMarkJoiningDatePending?: (candidateId: string) => void;
+  onOpenBgcDetail?: (candidate: CandidateRecord) => void;
 }
 
 export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
@@ -60,6 +62,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   onViewProof,
   onUpdateJoiningDate,
   onMarkJoiningDatePending,
+  onOpenBgcDetail,
 }) => {
   const [joiningDateInput, setJoiningDateInput] = useState<string>('');
   const [isEditingJoiningDate, setIsEditingJoiningDate] = useState<boolean>(false);
@@ -286,7 +289,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
           <div className="py-1 flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2.5">
               {/* Custom Payment Schedule Window */}
-              {userRole !== 'COMPLIANCE_MANAGER' && candidate.status !== 'CLOSED' && (
+              {candidate.status !== 'CLOSED' && (
                 <button
                   onClick={() => onOpenCustomWindow(candidate)}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 transition-all shadow-sm cursor-pointer"
@@ -297,7 +300,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               )}
 
               {/* One-Shot Toggle */}
-              {userRole !== 'COMPLIANCE_MANAGER' && candidate.status !== 'CLOSED' && (
+              {candidate.status !== 'CLOSED' && (
                 <button
                   disabled={hasPaidInstallment}
                   onClick={() => onToggleOneShot(candidate)}
@@ -314,15 +317,27 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               )}
             </div>
 
-            {/* Trigger On-Offer Invoice */}
-            <button
-              onClick={() => onGenerateInvoice(candidate)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 transition-all shadow-sm cursor-pointer"
-            >
-              <Receipt className="h-3.5 w-3.5 text-blue-600" />
-              Generate On-Offer Invoice (MCP)
-              <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onOpenBgcDetail && (
+                <button
+                  onClick={() => onOpenBgcDetail(candidate)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold border border-emerald-200 transition-all shadow-sm cursor-pointer"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  BGC Details & Proofs
+                </button>
+              )}
+
+              {/* Trigger On-Offer Invoice */}
+              <button
+                onClick={() => onGenerateInvoice(candidate)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 transition-all shadow-sm cursor-pointer"
+              >
+                <Receipt className="h-3.5 w-3.5 text-blue-600" />
+                Generate On-Offer Invoice (MCP)
+                <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+              </button>
+            </div>
           </div>
 
           {/* Installment Table */}
@@ -432,7 +447,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          {userRole !== 'COMPLIANCE_MANAGER' && !isPaid && onSendReminder && (
+                          {!isPaid && onSendReminder && (
                             <button
                               onClick={() => onSendReminder(candidate, inst)}
                               className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all text-[11px] flex items-center gap-1 shadow-sm cursor-pointer"
@@ -460,15 +475,13 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                               Unmark
                             </button>
                           )}
-                          {userRole !== 'COMPLIANCE_MANAGER' && (
-                            <button
-                              onClick={() => onEditInst(candidate, inst)}
-                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-all cursor-pointer"
-                              title="Edit amount or date (Enforces min 5-character reason)"
-                            >
-                              <Edit2 className="h-3.5 w-3.5" />
-                            </button>
-                          )}
+                          <button
+                            onClick={() => onEditInst(candidate, inst)}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 transition-all cursor-pointer"
+                            title="Edit amount or date (Enforces min 5-character reason)"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </td>
                     </tr>

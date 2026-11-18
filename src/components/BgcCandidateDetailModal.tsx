@@ -28,6 +28,7 @@ interface BgcCandidateDetailModalProps {
   onOpenEdit: (cand: CandidateRecord) => void;
   onOpenMarkPaid: (cand: CandidateRecord) => void;
   onViewProof?: (url: string, name: string) => void;
+  onOpenLedgerDetail?: (cand: CandidateRecord) => void;
 }
 
 export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = ({
@@ -37,6 +38,7 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
   onOpenEdit,
   onOpenMarkPaid,
   onViewProof,
+  onOpenLedgerDetail,
 }) => {
   if (!isOpen || !candidate) return null;
 
@@ -88,6 +90,16 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
           </div>
 
           <div className="flex items-center gap-2">
+            {onOpenLedgerDetail && (
+              <button
+                onClick={() => onOpenLedgerDetail(candidate)}
+                title="View Full Payment Ledger & Joining Date Drawer"
+                className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-xs font-bold text-blue-700 dark:text-cyan-300 border border-blue-200 dark:border-blue-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                Ledger & Slots
+              </button>
+            )}
             <button
               onClick={() => onOpenEdit(candidate)}
               title="Edit BGC Form"
