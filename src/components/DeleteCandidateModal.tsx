@@ -37,11 +37,11 @@ export const DeleteCandidateModal: React.FC<DeleteCandidateModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/45 dark:bg-slate-950/45 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800/80 rounded-[32px] shadow-2xl p-7 overflow-hidden text-slate-900 dark:text-white animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-lg bg-white/95 dark:bg-[#0b1329]/95 backdrop-blur-2xl border border-white/90 dark:border-slate-800/80 rounded-[32px] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.14)] p-7 overflow-hidden text-slate-900 dark:text-white animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Soft Ambient Rose Glow */}

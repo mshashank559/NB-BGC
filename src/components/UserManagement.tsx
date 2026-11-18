@@ -375,11 +375,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({
       {/* Delete User Confirmation Modal */}
       {userToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/45 dark:bg-slate-950/45 backdrop-blur-md animate-in fade-in duration-200"
           onClick={() => setUserToDelete(null)}
         >
           <div
-            className="relative w-full max-w-md bg-white dark:bg-[#0f172a] border border-rose-200 dark:border-rose-900/60 rounded-3xl shadow-2xl p-6 sm:p-7 animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-md bg-white/95 dark:bg-[#0f172a] border border-white/90 dark:border-rose-900/60 rounded-3xl shadow-[0_24px_60px_-12px_rgba(0,0,0,0.14)] p-6 sm:p-7 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between mb-4">
