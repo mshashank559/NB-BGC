@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import os from 'os';
 import { CandidateRecord } from '@/types';
 import { sendPaymentReminderEmail } from '@/lib/emailService';
 
+export const dynamic = 'force-dynamic';
+
 const DATA_DIR = path.join(process.cwd(), 'data');
 const CANDIDATES_FILE = path.join(DATA_DIR, 'candidates.json');
+const TMP_FILE = path.join(os.tmpdir(), 'nb_candidates.json');
 
 export async function GET() {
   try {
@@ -14,7 +18,12 @@ export async function GET() {
       const content = await fs.readFile(CANDIDATES_FILE, 'utf-8');
       candidates = JSON.parse(content);
     } catch (e) {
-      return NextResponse.json({ success: true, pendingReminders: [], count: 0 });
+      try {
+        const tmpContent = await fs.readFile(TMP_FILE, 'utf-8');
+        candidates = JSON.parse(tmpContent);
+      } catch (err) {
+        return NextResponse.json({ success: true, pendingReminders: [], count: 0 });
+      }
     }
 
     const today = new Date();
@@ -72,7 +81,12 @@ export async function POST(req: Request) {
       const content = await fs.readFile(CANDIDATES_FILE, 'utf-8');
       candidates = JSON.parse(content);
     } catch (e) {
-      return NextResponse.json({ success: false, error: 'No candidates database found' }, { status: 404 });
+      try {
+        const tmpContent = await fs.readFile(TMP_FILE, 'utf-8');
+        candidates = JSON.parse(tmpContent);
+      } catch (err) {
+        return NextResponse.json({ success: true, processed: 0, sent: 0, errors: [] });
+      }
     }
 
     const defaultPaymentLink = body.paymentLink || 'https://netbounceplacement-docsign.vercel.app/dashboard';
@@ -128,7 +142,15 @@ export async function POST(req: Request) {
     }
 
     if (hasChanges) {
-      await fs.writeFile(CANDIDATES_FILE, JSON.stringify(candidates, null, 2), 'utf-8');
+      try {
+        await fs.writeFile(CANDIDATES_FILE, JSON.stringify(candidates, null, 2), 'utf-8');
+      } catch (e) {
+        try {
+          await fs.writeFile(TMP_FILE, JSON.stringify(candidates, null, 2), 'utf-8');
+        } catch (tmpErr) {
+          console.warn('Failed to persist reminder changes to /tmp:', tmpErr);
+        }
+      }
     }
 
     return NextResponse.json({
