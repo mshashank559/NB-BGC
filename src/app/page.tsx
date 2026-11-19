@@ -559,6 +559,13 @@ export default function DashboardPage() {
       bgcEndDate: data.bgcEndDate || '',
       isOneShotPayment: data.isOneShotPayment || false,
       bgcSlots: data.bgcSlots,
+      bgcPaymentStatus: data.bgcPaymentStatus || (data.bgcOfferStatus === 'CLEARED' ? 'PAID' : 'PENDING'),
+      bgcPaymentProofName: data.bgcPaymentProofName,
+      bgcPaymentProofDataUrl: data.bgcPaymentProofDataUrl,
+      bgcPaymentProofSize: data.bgcPaymentProofSize,
+      bgcPaymentProofType: data.bgcPaymentProofType,
+      bgcPaymentPaidDate: data.bgcPaymentPaidDate || (data.bgcOfferStatus === 'CLEARED' ? new Date().toISOString().split('T')[0] : undefined),
+      bgcPaymentRemarks: data.bgcPaymentRemarks,
     };
 
     updateAndPersistCandidates((prev) => [newDraft, ...prev]);
@@ -643,6 +650,13 @@ export default function DashboardPage() {
       bgcEndDate: data.bgcEndDate || '',
       isOneShotPayment: data.isOneShotPayment || false,
       bgcSlots: data.bgcSlots,
+      bgcPaymentStatus: data.bgcPaymentStatus || (data.bgcOfferStatus === 'CLEARED' ? 'PAID' : 'PENDING'),
+      bgcPaymentProofName: data.bgcPaymentProofName,
+      bgcPaymentProofDataUrl: data.bgcPaymentProofDataUrl,
+      bgcPaymentProofSize: data.bgcPaymentProofSize,
+      bgcPaymentProofType: data.bgcPaymentProofType,
+      bgcPaymentPaidDate: data.bgcPaymentPaidDate || (data.bgcOfferStatus === 'CLEARED' ? new Date().toISOString().split('T')[0] : undefined),
+      bgcPaymentRemarks: data.bgcPaymentRemarks,
       paymentPlan: {
         id: `plan-${Date.now().toString(36)}`,
         candidateId: targetId,
@@ -1671,6 +1685,9 @@ export default function DashboardPage() {
                       } else {
                         handleCollectPayment(cand);
                       }
+                    }}
+                    onViewProof={(dataUrl, title) => {
+                      setProofViewer({ isOpen: true, title, dataUrl });
                     }}
                   />
                 </motion.div>

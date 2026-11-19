@@ -12,6 +12,7 @@ import {
   Clock,
   Edit3,
   Trash2,
+  Paperclip,
 } from 'lucide-react';
 import { DeleteCandidateModal } from './DeleteCandidateModal';
 
@@ -24,6 +25,7 @@ interface PaymentLedgerProps {
   onEditDraft?: (cand: CandidateRecord) => void;
   onDeleteCandidate?: (id: string) => void;
   onCollectPayment?: (cand: CandidateRecord) => void;
+  onViewProof?: (url: string, name: string) => void;
   searchQuery: string;
 }
 
@@ -36,6 +38,7 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
   onEditDraft,
   onDeleteCandidate,
   onCollectPayment,
+  onViewProof,
   searchQuery,
 }) => {
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'DRAFT' | 'SUBMITTED' | 'CLOSED' | 'OVERDUE'>('ALL');
@@ -339,16 +342,41 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                       {/* 20. BGC status */}
                       <td className="py-3.5 px-3.5">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cand.bgcOfferStatus === 'CLEARED'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
-                          : cand.bgcOfferStatus === 'IN_PROGRESS'
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-cyan-400 dark:border-blue-800'
-                            : cand.bgcOfferStatus === 'FLAGGED'
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800'
-                              : 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                          }`}>
-                          {cand.bgcOfferStatus || 'INITIATED'}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cand.bgcOfferStatus === 'CLEARED'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                            : cand.bgcOfferStatus === 'IN_PROGRESS'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-cyan-400 dark:border-blue-800'
+                              : cand.bgcOfferStatus === 'FLAGGED'
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                            }`}>
+                            {cand.bgcOfferStatus || 'INITIATED'}
+                          </span>
+
+                          {/* Attachment Badge / Link */}
+                          {cand.bgcPaymentProofDataUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => onViewProof && onViewProof(cand.bgcPaymentProofDataUrl!, cand.bgcPaymentProofName || 'BGC Verification Proof')}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 dark:text-cyan-300 border border-blue-200 dark:border-blue-800 transition-all cursor-pointer shadow-2xs"
+                              title="View Uploaded Attachment / Verification Document"
+                            >
+                              <Paperclip className="w-3 h-3 text-blue-600 dark:text-cyan-400" />
+                              <span className="truncate max-w-[90px]">{cand.bgcPaymentProofName || 'Attached Proof'}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => onCollectPayment ? onCollectPayment(cand) : onOpenCandidateDetail(cand)}
+                              className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-blue-600 dark:hover:text-cyan-400 font-medium transition-colors cursor-pointer"
+                              title="Upload Proof & Clear BGC"
+                            >
+                              <Paperclip className="w-2.5 h-2.5" />
+                              Attach Proof
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* 21. Action (Sticky Right) */}
@@ -458,12 +486,28 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                       {/* 8. BGC Clearance */}
                       <td className="py-3.5 px-3.5">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cand.bgcPaymentStatus === 'PAID'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800'
-                          }`}>
-                          {cand.bgcPaymentStatus === 'PAID' ? '✅ Cleared' : '⏳ Pending'}
-                        </span>
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${cand.bgcPaymentStatus === 'PAID'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800'
+                            }`}>
+                            {cand.bgcPaymentStatus === 'PAID' ? '✅ Cleared' : '⏳ Pending'}
+                          </span>
+
+                          {cand.bgcPaymentProofDataUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => onViewProof && onViewProof(cand.bgcPaymentProofDataUrl!, cand.bgcPaymentProofName || 'BGC Payment Proof')}
+                              className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 dark:text-cyan-400 dark:hover:text-cyan-300 font-bold underline cursor-pointer"
+                              title="View Compliance Verification Document / Proof"
+                            >
+                              <Paperclip className="w-2.5 h-2.5" />
+                              <span className="truncate max-w-[85px]">{cand.bgcPaymentProofName || 'View Proof'}</span>
+                            </button>
+                          ) : (
+                            <span className="text-[9px] text-slate-400 italic">No attachment</span>
+                          )}
+                        </div>
                       </td>
 
                       {/* 9. Payment Structure (One-Shot vs Custom Slots) */}
@@ -588,17 +632,31 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                     {/* BGC Clearance Status */}
                     <td className="py-3.5 px-3.5">
-                      {cand.bgcPaymentStatus === 'PAID' ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          Cleared
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
-                          <Clock className="w-3 h-3 text-amber-600" />
-                          Pending
-                        </span>
-                      )}
+                      <div className="flex flex-col gap-1 items-start">
+                        {cand.bgcPaymentStatus === 'PAID' ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            Cleared
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300">
+                            <Clock className="w-3 h-3 text-amber-600" />
+                            Pending
+                          </span>
+                        )}
+
+                        {cand.bgcPaymentProofDataUrl && (
+                          <button
+                            type="button"
+                            onClick={() => onViewProof && onViewProof(cand.bgcPaymentProofDataUrl!, cand.bgcPaymentProofName || 'BGC Payment Proof')}
+                            className="inline-flex items-center gap-1 text-[10px] text-blue-600 hover:text-blue-800 dark:text-cyan-400 font-bold underline cursor-pointer"
+                            title="View Attached Proof Document"
+                          >
+                            <Paperclip className="w-2.5 h-2.5" />
+                            <span className="truncate max-w-[85px]">{cand.bgcPaymentProofName || 'Proof'}</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
 
                     {/* Payment Structure */}

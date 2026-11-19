@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, ShieldCheck, CheckCircle2, Save, FileText, User, DollarSign, Calendar, Building, Phone, Mail, Plus, Trash2, Zap } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, Save, FileText, User, DollarSign, Calendar, Building, Phone, Mail, Plus, Trash2, Zap, Upload, Paperclip } from 'lucide-react';
 import { CandidateRecord, BgcStatus } from '../types';
 
 interface BgcFormModalProps {
@@ -80,6 +80,11 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
         phoneReferenceGiven: initialData.phoneReferenceGiven || 'Yes',
         bgcEndDate: initialData.bgcEndDate || '',
         bgcOfferStatus: initialData.bgcOfferStatus || 'INITIATED',
+        bgcPaymentProofName: initialData.bgcPaymentProofName,
+        bgcPaymentProofDataUrl: initialData.bgcPaymentProofDataUrl,
+        bgcPaymentProofSize: initialData.bgcPaymentProofSize,
+        bgcPaymentProofType: initialData.bgcPaymentProofType,
+        bgcPaymentStatus: initialData.bgcPaymentStatus,
       });
 
       const isOne = initialData.isOneShotPayment || initialData.paymentPlan?.isOneShot || false;
@@ -286,6 +291,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       isOneShotPayment: isOneShot,
       bgcSlots: finalSlots,
       totalSlotNumber: finalSlots.length,
+      bgcPaymentStatus: formData.bgcOfferStatus === 'CLEARED' ? 'PAID' : (formData.bgcPaymentStatus || 'PENDING'),
     });
     onClose();
   };
@@ -313,6 +319,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       totalSlotNumber: finalSlots.length,
       isOneShotPayment: isOneShot,
       bgcSlots: finalSlots,
+      bgcPaymentStatus: formData.bgcOfferStatus === 'CLEARED' ? 'PAID' : (formData.bgcPaymentStatus || 'PENDING'),
     });
     onClose();
   };
@@ -819,6 +826,85 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
                 </select>
               </div>
             </div>
+          </div>
+
+          {/* Section 4: BGC Verification Attachment & Payment Proof */}
+          <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Paperclip className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+                4. BGC Verification Attachment & Payment Proof
+              </h3>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                Visible to Accounts Desk
+              </span>
+            </div>
+
+            {formData.bgcPaymentProofDataUrl ? (
+              <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-950/70 text-blue-600 dark:text-cyan-300 flex items-center justify-center flex-shrink-0 font-bold">
+                    <Paperclip className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      {formData.bgcPaymentProofName || 'Verification_Proof.pdf'}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      {formData.bgcPaymentProofSize || 'Document Attached'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleChange('bgcPaymentProofName', undefined);
+                    handleChange('bgcPaymentProofDataUrl', undefined);
+                    handleChange('bgcPaymentProofSize', undefined);
+                    handleChange('bgcPaymentProofType', undefined);
+                  }}
+                  className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
+                  title="Remove attachment"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-cyan-400 rounded-xl p-4 flex flex-col items-center justify-center bg-white/70 dark:bg-slate-900/60 cursor-pointer transition-all group">
+                <Upload className="w-6 h-6 text-slate-400 group-hover:text-blue-600 dark:group-hover:text-cyan-400 mb-1 transition-colors" />
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Click to upload BGC Verification Document or Payment Screenshot
+                </span>
+                <span className="text-[10px] text-slate-400 mt-0.5">
+                  PNG, JPG, PDF, Word, Excel (Max 15MB)
+                </span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 15 * 1024 * 1024) {
+                      alert('File exceeds 15 MB limit.');
+                      return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                      const dataUrl = event.target?.result as string;
+                      const sizeFormatted = file.size > 1024 * 1024
+                        ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+                        : `${Math.round(file.size / 1024)} KB`;
+                      handleChange('bgcPaymentProofName', file.name);
+                      handleChange('bgcPaymentProofDataUrl', dataUrl);
+                      handleChange('bgcPaymentProofSize', sizeFormatted);
+                      handleChange('bgcPaymentProofType', file.type);
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                />
+              </label>
+            )}
           </div>
 
           {/* Form Actions Footer */}
