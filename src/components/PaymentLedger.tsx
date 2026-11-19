@@ -292,11 +292,11 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                       {/* 13. BGC Done By */}
                       <td className="py-3.5 px-3.5">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${(cand.bgcDoneBy === 'Irfan')
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${(cand.bgcDoneBy === 'Imran')
                           ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800'
                           : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
                           }`}>
-                          {cand.bgcDoneBy || 'Irfan'}
+                          {cand.bgcDoneBy || 'Imran'}
                         </span>
                       </td>
 

@@ -124,7 +124,7 @@ export interface CandidateRecord {
     amount: number;
     dueDate: string;
   }>;
-  bgcDoneBy?: 'Irfan' | 'Deepak' | string;
+  bgcDoneBy?: 'Imran' | 'Deepak' | string;
   clientEmployerName?: string;
   bgcCompanyName?: string;
   bgcStartDate?: string;

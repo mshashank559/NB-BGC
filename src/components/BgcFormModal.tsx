@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, ShieldCheck, CheckCircle2, Save, FileText, User, DollarSign, Calendar, Building, Phone, Mail, Plus, Trash2, Zap, Upload, Paperclip } from 'lucide-react';
+import { X, ShieldCheck, CheckCircle2, Save, FileText, User, DollarSign, Calendar, Building, Phone, Mail, Plus, Trash2, Zap, Upload, Paperclip, Clock } from 'lucide-react';
 import { CandidateRecord, BgcStatus } from '../types';
 
 interface BgcFormModalProps {
@@ -36,7 +36,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
     onOfferPaymentDate: '',
     totalSlotAmount: 8400,
     totalSlotNumber: 4,
-    bgcDoneBy: 'Irfan',
+    bgcDoneBy: 'Imran',
     clientEmployerName: '',
     bgcCompanyName: '',
     bgcStartDate: '',
@@ -47,6 +47,13 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
   });
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Joining Date Options Panel
+  const [isJoiningDateOptionsOpen, setIsJoiningDateOptionsOpen] = useState<boolean>(false);
+
+  // Custom Team Leader State (Rudra, Shilp, Other)
+  const [isOtherTeamLead, setIsOtherTeamLead] = useState<boolean>(false);
+  const [customTeamLead, setCustomTeamLead] = useState<string>('');
 
   // Payment Schedule & Custom Slots State (Compliance Configured)
   const [isOneShot, setIsOneShot] = useState<boolean>(false);
@@ -59,9 +66,18 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
 
   useEffect(() => {
     if (initialData) {
+      const lead = initialData.teamLead || 'Rudra';
+      if (lead !== 'Rudra' && lead !== 'Shilp') {
+        setIsOtherTeamLead(true);
+        setCustomTeamLead(lead);
+      } else {
+        setIsOtherTeamLead(false);
+        setCustomTeamLead('');
+      }
+
       setFormData({
         candidateName: initialData.candidateName || '',
-        teamLead: initialData.teamLead || 'Rudra',
+        teamLead: lead,
         poType: initialData.poType || '1 st',
         salesPerson: initialData.salesPerson || '',
         personalEmail: initialData.personalEmail || '',
@@ -72,7 +88,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
         onOfferPaymentDate: initialData.onOfferPaymentDate || '',
         totalSlotAmount: initialData.totalSlotAmount ?? (initialData.paymentPlan?.totalPayable || 8400),
         totalSlotNumber: initialData.totalSlotNumber ?? (initialData.numberOfInstallments || 4),
-        bgcDoneBy: initialData.bgcDoneBy || 'Irfan',
+        bgcDoneBy: initialData.bgcDoneBy || 'Imran',
         clientEmployerName: initialData.clientEmployerName || initialData.endClient || '',
         bgcCompanyName: initialData.bgcCompanyName || '',
         bgcStartDate: initialData.bgcStartDate || '',
@@ -118,6 +134,9 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
         setCustomSlots(slots);
       }
     } else {
+      setIsOtherTeamLead(false);
+      setCustomTeamLead('');
+      setIsJoiningDateOptionsOpen(false);
       setFormData({
         candidateName: '',
         teamLead: 'Rudra',
@@ -131,7 +150,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
         onOfferPaymentDate: '',
         totalSlotAmount: 8400,
         totalSlotNumber: 4,
-        bgcDoneBy: 'Irfan',
+        bgcDoneBy: 'Imran',
         clientEmployerName: '',
         bgcCompanyName: '',
         bgcStartDate: '',
@@ -268,7 +287,6 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
     if (!formData.salesPerson?.trim()) errs.salesPerson = 'Sales Person is required';
     if (!formData.personalEmail?.trim()) errs.personalEmail = 'Valid Email is required';
     if (!formData.personalPhone?.trim()) errs.personalPhone = 'Mobile number is required';
-    if (!formData.joiningDateEndClient) errs.joiningDateEndClient = 'Joining date is required';
     if (!formData.clientEmployerName?.trim()) errs.clientEmployerName = 'Client/Employer name is required';
 
     setErrors(errs);
@@ -288,6 +306,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
 
     onSaveDraft({
       ...formData,
+      joiningDateStatus: formData.joiningDateStatus || (formData.joiningDateEndClient ? 'SET' : 'TO_BE_UPDATED'),
       isOneShotPayment: isOneShot,
       bgcSlots: finalSlots,
       totalSlotNumber: finalSlots.length,
@@ -312,6 +331,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
 
     onSubmitForm({
       ...formData,
+      joiningDateStatus: formData.joiningDateStatus || (formData.joiningDateEndClient ? 'SET' : 'TO_BE_UPDATED'),
       endClient: formData.clientEmployerName || formData.endClient || 'Client US',
       jobRole: formData.jobRole || 'Full Stack Engineer',
       annualIncome: formData.annualIncome || (formData.totalSlotAmount || 8400) * 12.5,
@@ -376,21 +396,41 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
                 {errors.candidateName && <span className="text-[10px] text-rose-500 font-medium mt-0.5 block">{errors.candidateName}</span>}
               </div>
 
-              {/* 2. Team Leader (Dropdown: Rudra, Shilp) */}
+              {/* 2. Team Leader (Dropdown: Rudra, Shilp, Other) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Team Leader *
                 </label>
                 <select
-                  value={formData.teamLead || 'Rudra'}
-                  onChange={(e) => handleChange('teamLead', e.target.value)}
+                  value={isOtherTeamLead ? 'Other' : (formData.teamLead || 'Rudra')}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Other') {
+                      setIsOtherTeamLead(true);
+                      handleChange('teamLead', customTeamLead || 'Other');
+                    } else {
+                      setIsOtherTeamLead(false);
+                      handleChange('teamLead', val);
+                    }
+                  }}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="Rudra">Rudra</option>
                   <option value="Shilp">Shilp</option>
-                  <option value="Rohit Kulkarni">Rohit Kulkarni</option>
-                  <option value="Sneha Patel">Sneha Patel</option>
+                  <option value="Other">Other</option>
                 </select>
+                {isOtherTeamLead && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom Team Leader name"
+                    value={customTeamLead}
+                    onChange={(e) => {
+                      setCustomTeamLead(e.target.value);
+                      handleChange('teamLead', e.target.value || 'Other');
+                    }}
+                    className="mt-1.5 w-full px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-900 border border-blue-400 dark:border-blue-500 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                )}
               </div>
 
               {/* 3. PO Type (Dropdown: 1 st, 2 nd, 3 rd, BGC) */}
@@ -470,21 +510,127 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
               2. Financials, Joining & Slot Amounts
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* 7. Joining Date */}
+              {/* 7. Joining Date (Not Mandatory with Live Options & Reminders) */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Joining Date *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Joining Date
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsJoiningDateOptionsOpen(!isJoiningDateOptionsOpen)}
+                    className="text-[10px] font-bold text-blue-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Calendar className="w-3 h-3" />
+                    {isJoiningDateOptionsOpen ? 'Hide Options' : 'Date Options'}
+                  </button>
+                </div>
                 <input
                   type="date"
                   value={formData.joiningDateEndClient || ''}
-                  onChange={(e) => handleChange('joiningDateEndClient', e.target.value)}
-                  className={`w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border ${
-                    errors.joiningDateEndClient ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'
-                  } text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  onChange={(e) => {
+                    handleChange('joiningDateEndClient', e.target.value);
+                    if (e.target.value) {
+                      handleChange('joiningDateStatus', 'SET');
+                    }
+                  }}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {errors.joiningDateEndClient && <span className="text-[10px] text-rose-500 font-medium mt-0.5 block">{errors.joiningDateEndClient}</span>}
+                <div className="mt-1 flex items-center justify-between text-[10px]">
+                  {formData.joiningDateEndClient ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Status: Set ({formData.joiningDateEndClient})
+                    </span>
+                  ) : formData.joiningDateStatus === 'TO_BE_UPDATED' ? (
+                    <span className="text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> Status: To Be Updated (Reminder Active)
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">Optional (Not finalized)</span>
+                  )}
+                </div>
               </div>
+
+              {/* Joining Date Options & Reminders Expandable Box */}
+              {isJoiningDateOptionsOpen && (
+                <div className="col-span-1 md:col-span-3 p-3.5 rounded-2xl bg-blue-50/70 dark:bg-slate-800/80 border border-blue-200 dark:border-blue-900/50 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-blue-200/60 dark:border-slate-700">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-blue-600 dark:text-cyan-400" />
+                      <span className="font-extrabold text-xs text-slate-900 dark:text-white">
+                        Joining Date Management & Reminders
+                      </span>
+                    </div>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                        formData.joiningDateEndClient
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400'
+                          : formData.joiningDateStatus === 'TO_BE_UPDATED'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400'
+                          : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {formData.joiningDateEndClient
+                        ? 'Status: Updated'
+                        : formData.joiningDateStatus === 'TO_BE_UPDATED'
+                        ? 'Status: To Be Updated'
+                        : 'Status: Pending'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {/* Option 1: Official Joining Date */}
+                    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2">
+                      <span className="font-extrabold text-slate-900 dark:text-white text-xs block">
+                        1. Add Official Joining Date
+                      </span>
+                      <p className="text-[10px] text-slate-500 leading-tight">
+                        Enter finalized joining date. Automatically aligns installment due dates and resolves pending alerts.
+                      </p>
+                      <input
+                        type="date"
+                        value={formData.joiningDateEndClient || ''}
+                        onChange={(e) => {
+                          handleChange('joiningDateEndClient', e.target.value);
+                          if (e.target.value) {
+                            handleChange('joiningDateStatus', 'SET');
+                          }
+                        }}
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+
+                    {/* Option 2: Mark as To Be Updated */}
+                    <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 space-y-2 flex flex-col justify-between">
+                      <div>
+                        <span className="font-extrabold text-amber-900 dark:text-amber-300 text-xs block">
+                          2. To Be Updated
+                        </span>
+                        <p className="text-[10px] text-amber-800/80 dark:text-amber-400/80 leading-tight">
+                          Mark date as pending. Automatically creates a persistent dashboard reminder for follow-up.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleChange('joiningDateEndClient', '');
+                          handleChange('joiningDateStatus', 'TO_BE_UPDATED');
+                        }}
+                        className={`w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          formData.joiningDateStatus === 'TO_BE_UPDATED' && !formData.joiningDateEndClient
+                            ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-400'
+                            : 'bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200'
+                        }`}
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        {formData.joiningDateStatus === 'TO_BE_UPDATED' && !formData.joiningDateEndClient
+                          ? '✓ Marked as To Be Updated'
+                          : 'Mark as To Be Updated'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 8. Upfront Amount */}
               <div>
@@ -707,17 +853,17 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
               3. BGC Agency, Employer & Reference Checks
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* 13. BGC Done By (Dropdown: Irfan, Deepak) */}
+              {/* 13. BGC Done By (Dropdown: Imran, Deepak) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   BGC Done By *
                 </label>
                 <select
-                  value={formData.bgcDoneBy || 'Irfan'}
+                  value={formData.bgcDoneBy || 'Imran'}
                   onChange={(e) => handleChange('bgcDoneBy', e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="Irfan">Irfan</option>
+                  <option value="Imran">Imran</option>
                   <option value="Deepak">Deepak</option>
                 </select>
               </div>

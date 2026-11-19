@@ -66,18 +66,6 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   onOpenBgcDetail,
   onOpenMarkPaid,
 }) => {
-  const [joiningDateInput, setJoiningDateInput] = useState<string>('');
-  const [isEditingJoiningDate, setIsEditingJoiningDate] = useState<boolean>(false);
-  const [joiningDateMsg, setJoiningDateMsg] = useState<string>('');
-
-  useEffect(() => {
-    if (candidate) {
-      setJoiningDateInput(candidate.joiningDateEndClient || '');
-      setIsEditingJoiningDate(!candidate.joiningDateEndClient || candidate.joiningDateStatus === 'TO_BE_UPDATED');
-      setJoiningDateMsg('');
-    }
-  }, [candidate]);
-
   if (!isOpen || !candidate) return null;
 
   const installments = candidate.paymentPlan?.installments || [];
@@ -88,31 +76,6 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   const balance = Math.max(0, totalPayable - totalPaid);
   const isOneShot = candidate.paymentPlan?.isOneShot || false;
   const hasPaidInstallment = installments.some((i) => i.status === 'PAID');
-
-  const hasJoiningDate = !!candidate.joiningDateEndClient && candidate.joiningDateStatus !== 'TO_BE_UPDATED';
-
-  const handleSaveJoiningDate = () => {
-    if (!joiningDateInput.trim()) {
-      setJoiningDateMsg('Please select a valid joining date.');
-      return;
-    }
-    if (onUpdateJoiningDate) {
-      onUpdateJoiningDate(candidate.id, joiningDateInput.trim());
-      setIsEditingJoiningDate(false);
-      setJoiningDateMsg('Joining date successfully updated & saved. Reminder resolved.');
-      setTimeout(() => setJoiningDateMsg(''), 4000);
-    }
-  };
-
-  const handleSetToBeUpdated = () => {
-    if (onMarkJoiningDatePending) {
-      onMarkJoiningDatePending(candidate.id);
-      setIsEditingJoiningDate(true);
-      setJoiningDateInput('');
-      setJoiningDateMsg('Marked as To Be Updated. Persistent reminder generated for dashboard.');
-      setTimeout(() => setJoiningDateMsg(''), 4000);
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-hidden">
@@ -255,7 +218,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">BGC Done By</span>
-                <strong className="text-blue-700">{candidate.bgcDoneBy || 'Irfan'}</strong>
+                <strong className="text-blue-700">{candidate.bgcDoneBy || 'Imran'}</strong>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">BGC / Offer Amt</span>
@@ -500,119 +463,6 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                 })}
               </tbody>
             </table>
-          </div>
-
-          {/* JOINING DATE MANAGEMENT SECTION (Below Collection Section) */}
-          <div className="p-4 rounded-2xl bg-slate-50/90 border border-slate-200/90 text-xs shadow-xs">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/80">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-blue-600" />
-                <h4 className="font-extrabold text-slate-900 text-xs tracking-tight">Joining Date Management & Reminders</h4>
-              </div>
-              {hasJoiningDate ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] border border-emerald-300">
-                  <CheckCircle2 className="h-3 w-3" /> Status: Updated
-                </span>
-              ) : candidate.joiningDateStatus === 'TO_BE_UPDATED' ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px] border border-amber-300">
-                  <Clock className="h-3 w-3" /> Status: To Be Updated (Pending Reminder Active)
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold text-[10px]">
-                  Status: Pending
-                </span>
-              )}
-            </div>
-
-            {hasJoiningDate && !isEditingJoiningDate ? (
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-emerald-200/80">
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-                    <CalendarCheck className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">
-                      Official Joining Date: <span className="font-mono text-emerald-700 text-sm">{candidate.joiningDateEndClient}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-500 font-medium">
-                      Updated by: <strong>{candidate.joiningDateUpdatedByName || 'System / Onboarding'}</strong>
-                      {candidate.joiningDateUpdatedAt && <span> • {new Date(candidate.joiningDateUpdatedAt).toLocaleDateString()}</span>}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setIsEditingJoiningDate(true)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all text-xs border border-slate-200 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Edit2 className="h-3 w-3" /> Change Joining Date
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-bold text-slate-800">
-                    {candidate.joiningDateStatus === 'TO_BE_UPDATED'
-                      ? '⚠️ Joining Date marked as Pending – Please provide the finalized joining date.'
-                      : 'Joining Date is currently not finalized. Choose an option below:'}
-                  </span>
-                  {hasJoiningDate && (
-                    <button
-                      onClick={() => setIsEditingJoiningDate(false)}
-                      className="text-[11px] text-slate-500 hover:text-slate-800 font-bold cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  {/* Option 1: Add Joining Date */}
-                  <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 space-y-2.5">
-                    <span className="font-extrabold text-blue-900 text-xs block">1. Add Joining Date</span>
-                    <p className="text-[10px] text-slate-600 leading-tight">
-                      Enter the candidate&apos;s joining date. Automatically resolves active pending reminders and logs audit history.
-                    </p>
-                    <div className="flex gap-2">
-                      <input
-                        type="date"
-                        value={joiningDateInput}
-                        onChange={(e) => setJoiningDateInput(e.target.value)}
-                        className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono font-medium focus:outline-none focus:border-blue-500"
-                      />
-                      <button
-                        onClick={handleSaveJoiningDate}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs flex items-center gap-1 shadow-xs cursor-pointer"
-                      >
-                        <Check className="h-3.5 w-3.5" /> Save
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Option 2: To Be Updated */}
-                  <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200 space-y-2.5 flex flex-col justify-between">
-                    <div>
-                      <span className="font-extrabold text-amber-900 text-xs block">2. To Be Updated</span>
-                      <p className="text-[10px] text-amber-800/80 leading-tight">
-                        Mark date as pending. Automatically creates a persistent dashboard reminder for follow-up.
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleSetToBeUpdated}
-                      className="w-full py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                    >
-                      <Clock className="h-3.5 w-3.5" /> Mark as To Be Updated
-                    </button>
-                  </div>
-                </div>
-
-                {joiningDateMsg && (
-                  <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-medium flex items-center gap-1.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
-                    <span>{joiningDateMsg}</span>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* REFERRAL BONUS & PAYMENT DEDUCTION LEDGER */}

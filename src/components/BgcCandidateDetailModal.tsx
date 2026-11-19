@@ -236,11 +236,11 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
                 <div className="flex justify-between items-center py-1">
                   <span className="text-slate-400">BGC Done By</span>
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    candidate.bgcDoneBy === 'Irfan'
+                    candidate.bgcDoneBy === 'Imran'
                       ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400'
                       : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400'
                   }`}>
-                    {candidate.bgcDoneBy || 'Irfan'}
+                    {candidate.bgcDoneBy || 'Imran'}
                   </span>
                 </div>
               </div>
