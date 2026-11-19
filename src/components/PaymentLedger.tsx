@@ -43,8 +43,11 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
   const scopedCandidates = candidates.filter((cand) => {
     if (userRole === 'ACCOUNT_MANAGER') {
-      // Mandatory Gate: Candidate is ONLY handed off to Accountant when BGC is fully CLEARED!
-      const isBgcCleared = cand.bgcOfferStatus === 'CLEARED' || cand.bgcPaymentStatus === 'PAID';
+      // Mandatory Gate: Candidate is handed off to Accountant when BGC is CLEARED/PAID or payment installments have started!
+      const isBgcCleared =
+        cand.bgcOfferStatus === 'CLEARED' ||
+        cand.bgcPaymentStatus === 'PAID' ||
+        (cand.paymentPlan?.installments || []).some((i) => i.status === 'PAID');
       return isBgcCleared && (cand.status === 'SUBMITTED' || cand.status === 'CLOSED');
     }
     if (userRole === 'COMPLIANCE_MANAGER') {
@@ -62,12 +65,12 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
       if (cand.status !== statusFilter) return false;
     }
 
-    if (searchQuery.trim()) {
+    if (searchQuery && searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchName = cand.candidateName.toLowerCase().includes(q);
-      const matchClient = cand.endClient.toLowerCase().includes(q);
-      const matchSales = cand.salesPerson.toLowerCase().includes(q);
-      const matchRole = cand.jobRole.toLowerCase().includes(q);
+      const matchName = (cand.candidateName || '').toLowerCase().includes(q);
+      const matchClient = (cand.endClient || cand.clientEmployerName || '').toLowerCase().includes(q);
+      const matchSales = (cand.salesPerson || '').toLowerCase().includes(q);
+      const matchRole = (cand.jobRole || '').toLowerCase().includes(q);
       return matchName || matchClient || matchSales || matchRole;
     }
 

@@ -45,6 +45,7 @@ interface CandidateDetailModalProps {
   onUpdateJoiningDate?: (candidateId: string, newDate: string) => void;
   onMarkJoiningDatePending?: (candidateId: string) => void;
   onOpenBgcDetail?: (candidate: CandidateRecord) => void;
+  onOpenMarkPaid?: (candidate: CandidateRecord) => void;
 }
 
 export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
@@ -63,6 +64,7 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
   onUpdateJoiningDate,
   onMarkJoiningDatePending,
   onOpenBgcDetail,
+  onOpenMarkPaid,
 }) => {
   const [joiningDateInput, setJoiningDateInput] = useState<string>('');
   const [isEditingJoiningDate, setIsEditingJoiningDate] = useState<boolean>(false);
@@ -204,6 +206,15 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
                   </p>
                 </div>
               </div>
+              {onOpenMarkPaid && (userRole === 'COMPLIANCE_MANAGER' || userRole === 'ADMIN') && (
+                <button
+                  onClick={() => onOpenMarkPaid(candidate)}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0 active:scale-95"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Verify & Clear BGC
+                </button>
+              )}
             </div>
           )}
 

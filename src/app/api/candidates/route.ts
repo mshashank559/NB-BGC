@@ -36,8 +36,6 @@ async function fetchFromSupabase(): Promise<CandidateRecord[] | null> {
         if (Array.isArray(parsed)) {
           return parsed;
         }
-      } else if (Array.isArray(data) && data.length === 0) {
-        return [];
       }
     }
   } catch (err) {
@@ -49,24 +47,17 @@ async function fetchFromSupabase(): Promise<CandidateRecord[] | null> {
 // 2. Persist candidates snapshot to Supabase Cloud DB
 async function saveToSupabase(candidates: CandidateRecord[]): Promise<void> {
   try {
-    // Delete older snapshots to maintain single clean state
-    await fetch(`${SUPABASE_URL}/rest/v1/audit_entries?action_type=eq.CANDIDATES_CLOUD_STATE`, {
-      method: 'DELETE',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-    });
-
     // Wrapper ensures payload satisfies check constraint (char_length(remarks) >= 5)
     const payload = JSON.stringify({ candidates });
 
+    // 1. Insert new snapshot first (NEVER delete before inserting, preventing race-condition empty states)
     const res = await fetch(`${SUPABASE_URL}/rest/v1/audit_entries`, {
       method: 'POST',
       headers: {
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${SUPABASE_KEY}`,
         'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
       },
       body: JSON.stringify({
         candidate_id: 'c1111111-1111-1111-1111-111111111111',
@@ -75,7 +66,21 @@ async function saveToSupabase(candidates: CandidateRecord[]): Promise<void> {
         changed_by: '00000000-0000-0000-0000-000000000001',
       }),
     });
-    if (!res.ok) {
+
+    if (res.ok) {
+      const inserted = await res.json();
+      const newId = Array.isArray(inserted) && inserted[0]?.id ? inserted[0].id : null;
+      if (newId) {
+        // 2. Safely clean up older snapshots while preserving the newly inserted state
+        await fetch(`${SUPABASE_URL}/rest/v1/audit_entries?action_type=eq.CANDIDATES_CLOUD_STATE&id=neq.${newId}`, {
+          method: 'DELETE',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+          },
+        });
+      }
+    } else {
       console.warn('Supabase save returned status:', res.status);
     }
   } catch (err) {

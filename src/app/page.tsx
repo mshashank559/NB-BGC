@@ -293,10 +293,46 @@ export default function DashboardPage() {
     setCountUpTrigger((prev) => prev + 1);
   };
 
-  // Core Data States (Server DB is single source of truth)
+  // Core Data States (Server DB is single source of truth, localStorage for instant first paint)
   const [candidatesLoaded, setCandidatesLoaded] = useState(false);
-  const [candidates, setCandidates] = useState<CandidateRecord[]>([]);
-  const isSyncingFromServerRef = React.useRef(false);
+  const [candidates, setCandidates] = useState<CandidateRecord[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('nb_bgc_candidates_list');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return [];
+  });
+
+  // Unified Candidate Mutation & Cloud Persistence Function (Direct, reliable, no auto-save race conditions)
+  const updateAndPersistCandidates = async (
+    updater: (prev: CandidateRecord[]) => CandidateRecord[]
+  ) => {
+    let nextState: CandidateRecord[] = [];
+    setCandidates((prev) => {
+      nextState = updater(prev);
+      return nextState;
+    });
+    setCountUpTrigger((c) => c + 1);
+
+    try {
+      localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(nextState));
+    } catch (e) {}
+
+    try {
+      await fetch('/api/candidates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidates: nextState }),
+      });
+    } catch (e) {
+      console.error('Failed to persist candidates to server:', e);
+    }
+  };
 
   // Real-Time Live Sync: Supabase Realtime Channel + 3-sec Polling + Window Focus
   React.useEffect(() => {
@@ -314,8 +350,6 @@ export default function DashboardPage() {
               if (prevStr === nextStr) {
                 return prev; // No changes, prevent unnecessary re-render
               }
-              // Mark flag so useEffect does NOT post back to server
-              isSyncingFromServerRef.current = true;
               // Data changed live! Trigger smooth count-up animation on KPI cards
               setCountUpTrigger((c) => c + 1);
               try {
@@ -373,23 +407,6 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // Persist Candidates to localStorage & Server DB on changes (user mutations only)
-  React.useEffect(() => {
-    if (!mounted || !candidatesLoaded) return;
-    if (isSyncingFromServerRef.current) {
-      isSyncingFromServerRef.current = false;
-      return; // Do NOT post back what we just received from server sync!
-    }
-    try {
-      localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(candidates));
-      fetch('/api/candidates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidates }),
-      }).catch((e) => console.error('Failed to persist candidates to DB:', e));
-    } catch (e) {}
-  }, [candidates, mounted, candidatesLoaded]);
-
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [joiningDateReminders, setJoiningDateReminders] = useState<JoiningDateReminder[]>([]);
 
@@ -434,7 +451,10 @@ export default function DashboardPage() {
 
     const visibleCandidates = candidates.filter((c) => {
       if (currentUser.role === 'ACCOUNT_MANAGER') {
-        const isBgcCleared = c.bgcOfferStatus === 'CLEARED' || c.bgcPaymentStatus === 'PAID';
+        const isBgcCleared =
+          c.bgcOfferStatus === 'CLEARED' ||
+          c.bgcPaymentStatus === 'PAID' ||
+          (c.paymentPlan?.installments || []).some((i) => i.status === 'PAID');
         return isBgcCleared && c.status !== 'DRAFT';
       }
       return true;
@@ -470,7 +490,11 @@ export default function DashboardPage() {
   const scopedForDashboard = useMemo(() => {
     if (currentUser.role === 'ACCOUNT_MANAGER') {
       return candidates.filter(
-        (c) => (c.bgcOfferStatus === 'CLEARED' || c.bgcPaymentStatus === 'PAID') && c.status !== 'DRAFT'
+        (c) =>
+          (c.bgcOfferStatus === 'CLEARED' ||
+           c.bgcPaymentStatus === 'PAID' ||
+           (c.paymentPlan?.installments || []).some((i) => i.status === 'PAID')) &&
+          c.status !== 'DRAFT'
       );
     }
     return candidates;
@@ -484,7 +508,7 @@ export default function DashboardPage() {
   // Handler: Save PO / BGC Form as Draft
   const handleSaveDraft = (data: Partial<CandidateRecord>) => {
     if (data.id) {
-      setCandidates((prev) =>
+      updateAndPersistCandidates((prev) =>
         prev.map((c) => {
           if (c.id !== data.id) return c;
           return {
@@ -537,7 +561,7 @@ export default function DashboardPage() {
       bgcSlots: data.bgcSlots,
     };
 
-    setCandidates((prev) => [newDraft, ...prev]);
+    updateAndPersistCandidates((prev) => [newDraft, ...prev]);
     setEditingDraft(null);
   };
 
@@ -632,7 +656,7 @@ export default function DashboardPage() {
       },
     };
 
-    setCandidates((prev) => {
+    updateAndPersistCandidates((prev) => {
       const exists = prev.some((c) => c.id === targetId);
       if (exists) {
         return prev.map((c) => (c.id === targetId ? newSubmittedCandidate : c));
@@ -660,24 +684,8 @@ export default function DashboardPage() {
   };
 
   // Handler: Delete Candidate (Instantly removes from local state, localStorage, and Supabase cloud DB)
-  const handleDeleteCandidate = async (candidateId: string) => {
-    isSyncingFromServerRef.current = false;
-    const updated = candidates.filter((c) => c.id !== candidateId);
-    setCandidates(updated);
-    setCountUpTrigger((c) => c + 1);
-    try {
-      localStorage.setItem('nb_bgc_candidates_list', JSON.stringify(updated));
-    } catch (e) {}
-
-    try {
-      await fetch('/api/candidates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'DELETE', candidateId }),
-      });
-    } catch (e) {
-      console.error('Failed to delete candidate from cloud database:', e);
-    }
+  const handleDeleteCandidate = (candidateId: string) => {
+    updateAndPersistCandidates((prev) => prev.filter((c) => c.id !== candidateId));
   };
 
   // Handler: Collect Payment directly from Ledger
@@ -700,7 +708,7 @@ export default function DashboardPage() {
     remarks: string,
     proofFile?: { name: string; dataUrl: string; size: string; type: string }
   ) => {
-    setCandidates((prev) =>
+    updateAndPersistCandidates((prev) =>
       prev.map((c) => {
         if (c.id !== candidateId) return c;
         return {
@@ -764,7 +772,7 @@ export default function DashboardPage() {
     paidDate: string,
     deductionData?: DeductionRecord
   ) => {
-    setCandidates((prev) =>
+    updateAndPersistCandidates((prev) =>
       prev.map((c) => {
         if (c.id !== candidateId || !c.paymentPlan) return c;
 
@@ -900,7 +908,7 @@ export default function DashboardPage() {
     const cand = candidates.find((c) => c.id === candidateId);
     const oldDate = cand?.joiningDateEndClient || 'Pending';
 
-    setCandidates((prev) =>
+    updateAndPersistCandidates((prev) =>
       prev.map((c) => {
         if (c.id !== candidateId) return c;
         return {
@@ -959,7 +967,7 @@ export default function DashboardPage() {
     const cand = candidates.find((c) => c.id === candidateId);
     if (!cand) return;
 
-    setCandidates((prev) =>
+    updateAndPersistCandidates((prev) =>
       prev.map((c) => {
         if (c.id !== candidateId) return c;
         return {
@@ -1027,7 +1035,7 @@ export default function DashboardPage() {
       return;
     }
 
-    setCandidates((prev) =>
+    updateAndPersistCandidates((prev) =>
       prev.map((c) => {
         if (c.id !== candidate.id || !c.paymentPlan) return c;
         const updated = c.paymentPlan.installments.map((i) => {
@@ -1071,7 +1079,7 @@ export default function DashboardPage() {
     newDueDate: string,
     remark: string
   ) => {
-    setCandidates((prev) =>
+    updateAndPersistCandidates((prev) =>
       prev.map((c) => {
         if (c.id !== candidateId || !c.paymentPlan) return c;
 
@@ -1128,7 +1136,7 @@ export default function DashboardPage() {
     remainingCount: number,
     remark: string
   ) => {
-    setCandidates((prev) =>
+    updateAndPersistCandidates((prev) =>
       prev.map((c) => {
         if (c.id !== candidateId || !c.paymentPlan) return c;
 
@@ -1194,7 +1202,7 @@ export default function DashboardPage() {
       return;
     }
 
-    setCandidates((prev) =>
+    updateAndPersistCandidates((prev) =>
       prev.map((c) => {
         if (c.id !== candidate.id || !c.paymentPlan) return c;
 
@@ -1248,7 +1256,7 @@ export default function DashboardPage() {
 
     // Update candidate installment row with invoice reference
     if (inst) {
-      setCandidates((prev) =>
+      updateAndPersistCandidates((prev) =>
         prev.map((c) => {
           if (c.id !== candidate.id || !c.paymentPlan) return c;
           const updated = c.paymentPlan.installments.map((i) => {
@@ -1261,7 +1269,10 @@ export default function DashboardPage() {
           });
           return {
             ...c,
-            paymentPlan: { ...c.paymentPlan, installments: updated },
+            paymentPlan: {
+              ...c.paymentPlan,
+              installments: updated,
+            },
           };
         })
       );
@@ -1729,6 +1740,10 @@ export default function DashboardPage() {
                 setSelectedCandidate(cand);
                 setIsBgcDetailModalOpen(true);
               }}
+              onOpenMarkPaid={(cand) => {
+                setSelectedCandidate(cand);
+                setIsMarkBgcPaidModalOpen(true);
+              }}
             />
 
             {activeCandidate && selectedInstallment && (
@@ -1739,7 +1754,7 @@ export default function DashboardPage() {
                 installment={selectedInstallment}
                 currentUser={currentUser}
                 onSuccess={() => {
-                  setCandidates((prev) =>
+                  updateAndPersistCandidates((prev) =>
                     prev.map((c) => {
                       if (c.id !== activeCandidate.id) return c;
                       const updatedInsts = c.paymentPlan?.installments?.map((inst) =>
