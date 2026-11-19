@@ -222,7 +222,14 @@ export const CandidateDetailModal: React.FC<CandidateDetailModalProps> = ({
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">BGC / Offer Amt</span>
-                <strong className="text-slate-800">${(candidate.bgcOfferAmount ?? 2500).toLocaleString()}</strong>
+                <strong className="text-slate-800">
+                  ${(candidate.bgcOfferAmount ?? 2500).toLocaleString()}
+                  {candidate.bgcOfferSplits && candidate.bgcOfferSplits.length > 1 && (
+                    <span className="ml-1 text-[9px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded-full border border-indigo-200">
+                      {candidate.bgcOfferSplits.length} splits
+                    </span>
+                  )}
+                </strong>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px]">Offer Pay Date</span>

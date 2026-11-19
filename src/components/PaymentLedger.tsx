@@ -271,6 +271,11 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
                       {/* 9. BGC/OFFER Amount */}
                       <td className="py-3.5 px-3.5 font-bold text-slate-900 dark:text-slate-100 font-tabular">
                         ${(cand.bgcOfferAmount ?? 2500).toLocaleString()}
+                        {cand.bgcOfferSplits && cand.bgcOfferSplits.length > 1 && (
+                          <span className="block text-[9px] text-indigo-600 dark:text-indigo-400 font-semibold font-sans">
+                            ({cand.bgcOfferSplits.length} splits)
+                          </span>
+                        )}
                       </td>
 
                       {/* 10. On offer payment date */}

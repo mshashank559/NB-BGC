@@ -141,6 +141,22 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   On-Offer Payment Date: <strong className="text-slate-800 dark:text-slate-200 font-mono">{candidate.onOfferPaymentDate || 'Not specified'}</strong>
                 </p>
+
+                {candidate.bgcOfferSplits && candidate.bgcOfferSplits.length > 1 && (
+                  <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                    <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-400 block mb-1">
+                      ✂️ BGC / Offer Split Schedule ({candidate.bgcOfferSplits.length} parts):
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {candidate.bgcOfferSplits.map((split) => (
+                        <div key={split.number} className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 text-[11px]">
+                          <span className="font-bold text-slate-900 dark:text-white mr-1.5">Split #{split.number}: ${split.amount.toLocaleString()}</span>
+                          {split.dueDate && <span className="text-[10px] text-slate-500 font-mono">({split.dueDate})</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Button or Clearance Status */}

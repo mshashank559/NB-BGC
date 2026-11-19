@@ -55,6 +55,10 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
   const [isOtherTeamLead, setIsOtherTeamLead] = useState<boolean>(false);
   const [customTeamLead, setCustomTeamLead] = useState<string>('');
 
+  // BGC Offer Amount Splits State
+  const [isBgcOfferSplitOpen, setIsBgcOfferSplitOpen] = useState<boolean>(false);
+  const [bgcOfferSplits, setBgcOfferSplits] = useState<Array<{ number: number; amount: number; dueDate: string }>>([]);
+
   // Payment Schedule & Custom Slots State (Compliance Configured)
   const [isOneShot, setIsOneShot] = useState<boolean>(false);
   const [customSlots, setCustomSlots] = useState<Array<{ number: number; amount: number; dueDate: string }>>([
@@ -73,6 +77,14 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       } else {
         setIsOtherTeamLead(false);
         setCustomTeamLead('');
+      }
+
+      if (initialData.bgcOfferSplits && initialData.bgcOfferSplits.length > 0) {
+        setBgcOfferSplits(initialData.bgcOfferSplits);
+        setIsBgcOfferSplitOpen(true);
+      } else {
+        setBgcOfferSplits([]);
+        setIsBgcOfferSplitOpen(false);
       }
 
       setFormData({
@@ -137,6 +149,8 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       setIsOtherTeamLead(false);
       setCustomTeamLead('');
       setIsJoiningDateOptionsOpen(false);
+      setBgcOfferSplits([]);
+      setIsBgcOfferSplitOpen(false);
       setFormData({
         candidateName: '',
         teamLead: 'Rudra',
@@ -281,13 +295,67 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
     setFormData((prev) => ({ ...prev, totalSlotNumber: count }));
   };
 
+  // BGC Offer Split Helpers
+  const handleAddBgcOfferSplit = () => {
+    const nextNum = bgcOfferSplits.length + 1;
+    const currentAllocated = bgcOfferSplits.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+    const target = formData.bgcOfferAmount ?? 2500;
+    const remaining = Math.max(0, target - currentAllocated);
+    const baseDate = formData.onOfferPaymentDate || new Date().toISOString().split('T')[0];
+    const nextDate = new Date(baseDate);
+    nextDate.setDate(nextDate.getDate() + nextNum * 15);
+    setBgcOfferSplits([
+      ...bgcOfferSplits,
+      { number: nextNum, amount: remaining, dueDate: nextDate.toISOString().split('T')[0] },
+    ]);
+  };
+
+  const handleRemoveBgcOfferSplit = (index: number) => {
+    const updated = bgcOfferSplits.filter((_, idx) => idx !== index).map((s, idx) => ({ ...s, number: idx + 1 }));
+    setBgcOfferSplits(updated);
+    if (updated.length === 0) {
+      setIsBgcOfferSplitOpen(false);
+    }
+  };
+
+  const handleBgcOfferSplitChange = (index: number, field: 'amount' | 'dueDate', value: any) => {
+    const updated = [...bgcOfferSplits];
+    let parsedVal = value;
+    if (field === 'amount') {
+      if (value === '' || value === undefined || value === null) {
+        parsedVal = '';
+      } else {
+        const clean = String(value).replace(/^0+(?=\d)/, '');
+        parsedVal = clean === '' ? '' : Number(clean);
+      }
+    }
+    updated[index] = { ...updated[index], [field]: parsedVal };
+    setBgcOfferSplits(updated);
+  };
+
+  const handleAutoSplitBgcOffer = (count: number) => {
+    const total = formData.bgcOfferAmount ?? 2500;
+    const perSplit = Math.round(total / count);
+    const baseDate = formData.onOfferPaymentDate || new Date().toISOString().split('T')[0];
+    const newSplits = [];
+    for (let i = 0; i < count; i++) {
+      const d = new Date(baseDate);
+      d.setDate(d.getDate() + i * 15);
+      newSplits.push({
+        number: i + 1,
+        amount: i === count - 1 ? total - perSplit * (count - 1) : perSplit,
+        dueDate: d.toISOString().split('T')[0],
+      });
+    }
+    setBgcOfferSplits(newSplits);
+  };
+
   const validate = (): boolean => {
     const errs: { [key: string]: string } = {};
     if (!formData.candidateName?.trim()) errs.candidateName = 'Candidate Name is required';
     if (!formData.salesPerson?.trim()) errs.salesPerson = 'Sales Person is required';
     if (!formData.personalEmail?.trim()) errs.personalEmail = 'Valid Email is required';
     if (!formData.personalPhone?.trim()) errs.personalPhone = 'Mobile number is required';
-    if (!formData.clientEmployerName?.trim()) errs.clientEmployerName = 'Client/Employer name is required';
 
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -309,6 +377,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       joiningDateStatus: formData.joiningDateStatus || (formData.joiningDateEndClient ? 'SET' : 'TO_BE_UPDATED'),
       isOneShotPayment: isOneShot,
       bgcSlots: finalSlots,
+      bgcOfferSplits: isBgcOfferSplitOpen && bgcOfferSplits.length > 0 ? bgcOfferSplits : undefined,
       totalSlotNumber: finalSlots.length,
       bgcPaymentStatus: formData.bgcOfferStatus === 'CLEARED' ? 'PAID' : (formData.bgcPaymentStatus || 'PENDING'),
     });
@@ -339,6 +408,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       totalSlotNumber: finalSlots.length,
       isOneShotPayment: isOneShot,
       bgcSlots: finalSlots,
+      bgcOfferSplits: isBgcOfferSplitOpen && bgcOfferSplits.length > 0 ? bgcOfferSplits : undefined,
       bgcPaymentStatus: formData.bgcOfferStatus === 'CLEARED' ? 'PAID' : (formData.bgcPaymentStatus || 'PENDING'),
     });
     onClose();
@@ -646,11 +716,38 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
                 />
               </div>
 
-              {/* 9. BGC/OFFER Amount */}
+              {/* 9. BGC/OFFER Amount with Split Option */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  BGC/OFFER Amount ($)
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    BGC/OFFER Amount ($)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isBgcOfferSplitOpen) {
+                        setIsBgcOfferSplitOpen(true);
+                        if (bgcOfferSplits.length === 0) {
+                          const total = formData.bgcOfferAmount ?? 2500;
+                          const half = Math.round(total / 2);
+                          const baseDate = formData.onOfferPaymentDate || new Date().toISOString().split('T')[0];
+                          const nextDate = new Date(baseDate);
+                          nextDate.setDate(nextDate.getDate() + 15);
+                          setBgcOfferSplits([
+                            { number: 1, amount: half, dueDate: baseDate },
+                            { number: 2, amount: total - half, dueDate: nextDate.toISOString().split('T')[0] },
+                          ]);
+                        }
+                      } else {
+                        setIsBgcOfferSplitOpen(false);
+                      }
+                    }}
+                    className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    {isBgcOfferSplitOpen ? 'Hide Splits' : '+ Add Split'}
+                  </button>
+                </div>
                 <input
                   type="number"
                   value={formData.bgcOfferAmount ?? ''}
@@ -658,6 +755,11 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
                   placeholder="2500"
                   className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-tabular focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {isBgcOfferSplitOpen && bgcOfferSplits.length > 0 && (
+                  <div className="mt-1 flex items-center gap-1 text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                    <span>✂️ Split into {bgcOfferSplits.length} parts (${bgcOfferSplits.reduce((s, i) => s + (Number(i.amount) || 0), 0).toLocaleString()})</span>
+                  </div>
+                )}
               </div>
 
               {/* 10. On Offer Payment Date */}
@@ -701,6 +803,133 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* BGC Offer Amount Splits Panel */}
+            {isBgcOfferSplitOpen && (
+              <div className="mt-3 p-4 rounded-2xl bg-gradient-to-br from-indigo-50/80 via-blue-50/50 to-transparent dark:from-slate-800/90 dark:to-slate-900/60 border border-indigo-200 dark:border-indigo-900/50 space-y-3 animate-in fade-in duration-200">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-indigo-200/60 dark:border-slate-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                      $
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-extrabold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                        BGC / Offer Amount Splits
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 font-bold">
+                          {bgcOfferSplits.length} Parts
+                        </span>
+                      </h4>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        Compliance member can customize as many BGC installment splits as needed.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-slate-400 font-semibold mr-1">Presets:</span>
+                    <button
+                      type="button"
+                      onClick={() => handleAutoSplitBgcOffer(2)}
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer"
+                    >
+                      2 Splits
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAutoSplitBgcOffer(3)}
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-indigo-50 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold border border-indigo-200 dark:border-indigo-800 transition-colors cursor-pointer"
+                    >
+                      3 Splits
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddBgcOfferSplit}
+                      className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" /> Add Another Split
+                    </button>
+                  </div>
+                </div>
+
+                {/* Splits Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 pt-1">
+                  {bgcOfferSplits.map((split, index) => (
+                    <div
+                      key={index}
+                      className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-950 shadow-2xs space-y-2 relative group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-extrabold text-indigo-900 dark:text-indigo-300">
+                          BGC Split #{split.number}
+                        </span>
+                        {bgcOfferSplits.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveBgcOfferSplit(index)}
+                            className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            title="Remove split"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Split Amount ($)</label>
+                        <input
+                          type="number"
+                          value={split.amount ?? ''}
+                          onChange={(e) => handleBgcOfferSplitChange(index, 'amount', e.target.value)}
+                          className="w-full px-2.5 py-1 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-tabular font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-500 mb-0.5">Due Date</label>
+                        <input
+                          type="date"
+                          value={split.dueDate || ''}
+                          onChange={(e) => handleBgcOfferSplitChange(index, 'dueDate', e.target.value)}
+                          className="w-full px-2 py-1 text-[11px] rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Balance & Summary Bar */}
+                <div className="flex flex-wrap items-center justify-between text-[11px] px-3.5 py-2 rounded-xl bg-white/90 dark:bg-slate-900/90 border border-indigo-200/60 dark:border-slate-800">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Total BGC Splits Allocated:{' '}
+                    <strong className="text-indigo-700 dark:text-indigo-300 font-bold">
+                      ${bgcOfferSplits.reduce((s, i) => s + (Number(i.amount) || 0), 0).toLocaleString()}
+                    </strong>{' '}
+                    across {bgcOfferSplits.length} split{bgcOfferSplits.length > 1 ? 's' : ''}
+                  </span>
+                  {bgcOfferSplits.reduce((s, i) => s + (Number(i.amount) || 0), 0) === (formData.bgcOfferAmount ?? 2500) ? (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Splits Match BGC Total (${(formData.bgcOfferAmount ?? 2500).toLocaleString()})
+                    </span>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">
+                        Target Total: ${(formData.bgcOfferAmount ?? 2500).toLocaleString()}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const total = bgcOfferSplits.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+                          handleChange('bgcOfferAmount', total);
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-indigo-100 hover:bg-indigo-200 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300 text-[10px] font-bold transition-colors cursor-pointer"
+                      >
+                        Sync BGC Amount to Splits
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Interactive Slot Payment Scheduler (One-Shot vs Multi-Slot Builder for Compliance) */}
             <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-white/10 space-y-3">
@@ -846,17 +1075,22 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
             </div>
           </div>
 
-          {/* Section 3: BGC Verification Details */}
+          {/* Section 3: BGC Verification Details (Optional) */}
           <div className="bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200/60 dark:border-white/5 space-y-4">
-            <h3 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
-              <Building className="w-3.5 h-3.5" />
-              3. BGC Agency, Employer & Reference Checks
-            </h3>
+            <div className="flex items-center justify-between pb-1 border-b border-slate-200/60 dark:border-slate-750">
+              <h3 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                <Building className="w-3.5 h-3.5" />
+                3. BGC Agency, Employer & Reference Checks (Optional)
+              </h3>
+              <span className="text-[10px] text-slate-400 font-semibold bg-slate-100 dark:bg-slate-700/60 px-2 py-0.5 rounded-full">
+                Optional
+              </span>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* 13. BGC Done By (Dropdown: Imran, Deepak) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  BGC Done By *
+                  BGC Done By
                 </label>
                 <select
                   value={formData.bgcDoneBy || 'Imran'}
@@ -871,18 +1105,15 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
               {/* 14. Client/Employer Name */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Client/Employer Name *
+                  Client/Employer Name
                 </label>
                 <input
                   type="text"
                   value={formData.clientEmployerName || ''}
                   onChange={(e) => handleChange('clientEmployerName', e.target.value)}
                   placeholder="e.g. Morgan Stanley / Citi"
-                  className={`w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border ${
-                    errors.clientEmployerName ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'
-                  } text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                {errors.clientEmployerName && <span className="text-[10px] text-rose-500 font-medium mt-0.5 block">{errors.clientEmployerName}</span>}
               </div>
 
               {/* 15. BGC Company Name */}
@@ -958,7 +1189,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
               {/* 20. BGC Status (Dropdown) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  BGC Status *
+                  BGC Status
                 </label>
                 <select
                   value={formData.bgcOfferStatus || 'INITIATED'}

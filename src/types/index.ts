@@ -57,6 +57,14 @@ export interface PaymentPlan {
   installments: Installment[];
 }
 
+export interface BgcOfferSplit {
+  number: number;
+  amount: number;
+  dueDate: string;
+  status?: 'PENDING' | 'PAID';
+  paidDate?: string;
+}
+
 export interface CandidateRecord {
   id: string;
   // Candidate Info (encrypted at rest in backend)
@@ -116,6 +124,7 @@ export interface CandidateRecord {
   poType?: '1 st' | '2 nd' | '3 rd' | 'BGC' | string;
   bgcOfferAmount?: number;
   onOfferPaymentDate?: string;
+  bgcOfferSplits?: BgcOfferSplit[];
   totalSlotAmount?: number;
   totalSlotNumber?: number;
   isOneShotPayment?: boolean;
