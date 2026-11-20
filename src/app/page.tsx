@@ -677,9 +677,44 @@ export default function DashboardPage() {
     };
 
     updateAndPersistCandidates((prev) => {
-      const exists = prev.some((c) => c.id === targetId);
-      if (exists) {
-        return prev.map((c) => (c.id === targetId ? newSubmittedCandidate : c));
+      const existingCandidate = prev.find((c) => c.id === targetId);
+      if (existingCandidate) {
+        const updatedCandidate: CandidateRecord = {
+          ...existingCandidate,
+          ...newSubmittedCandidate,
+          createdAt: existingCandidate.createdAt || newSubmittedCandidate.createdAt,
+          createdBy: existingCandidate.createdBy || newSubmittedCandidate.createdBy,
+          createdByName: existingCandidate.createdByName || newSubmittedCandidate.createdByName,
+          submittedAt: existingCandidate.submittedAt || newSubmittedCandidate.submittedAt,
+          updatedAt: new Date().toISOString(),
+        };
+
+        // If candidate already had paymentPlan with paid installments, preserve paid statuses
+        if (existingCandidate.paymentPlan?.installments && updatedCandidate.paymentPlan?.installments) {
+          const paidMap = new Map(
+            existingCandidate.paymentPlan.installments
+              .filter((i) => i.status === 'PAID')
+              .map((i) => [i.number, i])
+          );
+          if (paidMap.size > 0) {
+            updatedCandidate.paymentPlan.installments = updatedCandidate.paymentPlan.installments.map((inst) => {
+              const paid = paidMap.get(inst.number);
+              if (paid) {
+                return {
+                  ...inst,
+                  status: 'PAID' as const,
+                  paidDate: paid.paidDate,
+                  netCollectedAmount: paid.netCollectedAmount,
+                  invoiceNumber: paid.invoiceNumber,
+                  invoiceStatus: paid.invoiceStatus,
+                };
+              }
+              return inst;
+            });
+          }
+        }
+
+        return prev.map((c) => (c.id === targetId ? updatedCandidate : c));
       }
       return [newSubmittedCandidate, ...prev];
     });

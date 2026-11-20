@@ -88,6 +88,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       }
 
       setFormData({
+        id: initialData.id,
         candidateName: initialData.candidateName || '',
         teamLead: lead,
         poType: initialData.poType || '1 st',
@@ -154,6 +155,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       setBgcOfferSplits([]);
       setIsBgcOfferSplitOpen(false);
       setFormData({
+        id: undefined,
         candidateName: '',
         teamLead: 'Rudra',
         poType: '1 st',
@@ -384,6 +386,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
 
     onSaveDraft({
       ...formData,
+      id: initialData?.id || formData.id,
       upfrontAmount,
       totalSlotAmount,
       joiningDateStatus: formData.joiningDateStatus || (formData.joiningDateEndClient ? 'SET' : 'TO_BE_UPDATED'),
@@ -418,6 +421,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
 
     onSubmitForm({
       ...formData,
+      id: initialData?.id || formData.id,
       upfrontAmount,
       totalSlotAmount,
       joiningDateStatus: formData.joiningDateStatus || (formData.joiningDateEndClient ? 'SET' : 'TO_BE_UPDATED'),
