@@ -46,7 +46,7 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
   const bgcAmount = candidate.bgcOfferAmount ?? 2500;
   const upfrontAmount = candidate.upfrontAmount ?? 2000;
   const totalSlots = candidate.totalSlotNumber ?? 4;
-  const totalSlotAmt = candidate.totalSlotAmount ?? (candidate.paymentPlan?.totalPayable || 8400);
+  const totalSlotAmt = candidate.totalSlotAmount ?? (candidate.paymentPlan?.totalPayable ?? 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">

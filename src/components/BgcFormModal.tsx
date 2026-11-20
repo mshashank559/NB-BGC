@@ -95,11 +95,11 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
         personalEmail: initialData.personalEmail || '',
         personalPhone: initialData.personalPhone || '',
         joiningDateEndClient: initialData.joiningDateEndClient || '',
-        upfrontAmount: initialData.upfrontAmount || 2000,
+        upfrontAmount: initialData.upfrontAmount ?? 2000,
         bgcOfferAmount: initialData.bgcOfferAmount ?? 2500,
         onOfferPaymentDate: initialData.onOfferPaymentDate || '',
-        totalSlotAmount: initialData.totalSlotAmount ?? (initialData.paymentPlan?.totalPayable || 8400),
-        totalSlotNumber: initialData.totalSlotNumber ?? (initialData.numberOfInstallments || 4),
+        totalSlotAmount: initialData.totalSlotAmount ?? (initialData.paymentPlan?.totalPayable ?? 8400),
+        totalSlotNumber: initialData.totalSlotNumber ?? (initialData.numberOfInstallments ?? 4),
         bgcDoneBy: initialData.bgcDoneBy || 'Imran',
         clientEmployerName: initialData.clientEmployerName || initialData.endClient || '',
         bgcCompanyName: initialData.bgcCompanyName || '',
@@ -128,8 +128,10 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
             dueDate: inst.dueDate,
           }))
         );
+      } else if (initialData.totalSlotNumber === 0 || initialData.totalSlotAmount === 0) {
+        setCustomSlots([]);
       } else {
-        const total = initialData.totalSlotAmount || 8400;
+        const total = initialData.totalSlotAmount ?? 8400;
         const count = initialData.totalSlotNumber || 4;
         const base = initialData.joiningDateEndClient || new Date().toISOString().split('T')[0];
         const perSlot = Math.round(total / count);
@@ -236,8 +238,9 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
     nextDateObj.setDate(nextDateObj.getDate() + 30);
     const nextDueDate = nextDateObj.toISOString().split('T')[0];
 
-    const currentTotalAllocated = customSlots.reduce((sum, s) => sum + s.amount, 0);
-    const remaining = Math.max(0, (formData.totalSlotAmount || 8400) - currentTotalAllocated);
+    const currentTotalAllocated = customSlots.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+    const targetTotal = formData.totalSlotAmount !== undefined ? formData.totalSlotAmount : 8400;
+    const remaining = Math.max(0, targetTotal - currentTotalAllocated);
 
     const newSlot = {
       number: nextNum,
@@ -246,16 +249,17 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
     };
     const updated = [...customSlots, newSlot];
     setCustomSlots(updated);
-    setFormData((prev) => ({ ...prev, totalSlotNumber: updated.length }));
+    const newTotal = updated.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    setFormData((prev) => ({ ...prev, totalSlotNumber: updated.length, totalSlotAmount: newTotal }));
   };
 
   const handleRemoveSlot = (index: number) => {
-    if (customSlots.length <= 1) return;
     const updated = customSlots
       .filter((_, i) => i !== index)
       .map((s, idx) => ({ ...s, number: idx + 1 }));
     setCustomSlots(updated);
-    setFormData((prev) => ({ ...prev, totalSlotNumber: updated.length }));
+    const sum = updated.reduce((s, item) => s + (Number(item.amount) || 0), 0);
+    setFormData((prev) => ({ ...prev, totalSlotNumber: updated.length, totalSlotAmount: sum }));
   };
 
   const handleSlotChange = (index: number, field: 'amount' | 'dueDate', value: any) => {
@@ -278,7 +282,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
   };
 
   const handleAutoSplit = (count: number) => {
-    const total = formData.totalSlotAmount || 8400;
+    const total = formData.totalSlotAmount ?? 8400;
     const baseJoining = formData.joiningDateEndClient || new Date().toISOString().split('T')[0];
     const perSlot = Math.round(total / count);
     const newSlots = [];
@@ -292,7 +296,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       });
     }
     setCustomSlots(newSlots);
-    setFormData((prev) => ({ ...prev, totalSlotNumber: count }));
+    setFormData((prev) => ({ ...prev, totalSlotNumber: count, totalSlotAmount: total }));
   };
 
   // BGC Offer Split Helpers
@@ -363,17 +367,25 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
 
   const handleSave = () => {
     const finalSlots = isOneShot
-      ? [
-          {
-            number: 1,
-            amount: formData.totalSlotAmount || 8400,
-            dueDate: formData.joiningDateEndClient || new Date().toISOString().split('T')[0],
-          },
-        ]
+      ? (formData.totalSlotAmount !== undefined && formData.totalSlotAmount > 0
+          ? [
+              {
+                number: 1,
+                amount: formData.totalSlotAmount,
+                dueDate: formData.joiningDateEndClient || new Date().toISOString().split('T')[0],
+              },
+            ]
+          : [])
       : customSlots;
+
+    const slotSum = finalSlots.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const totalSlotAmount = formData.totalSlotAmount !== undefined ? formData.totalSlotAmount : slotSum;
+    const upfrontAmount = formData.upfrontAmount !== undefined ? formData.upfrontAmount : 0;
 
     onSaveDraft({
       ...formData,
+      upfrontAmount,
+      totalSlotAmount,
       joiningDateStatus: formData.joiningDateStatus || (formData.joiningDateEndClient ? 'SET' : 'TO_BE_UPDATED'),
       isOneShotPayment: isOneShot,
       bgcSlots: finalSlots,
@@ -389,21 +401,29 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
     if (!validate()) return;
 
     const finalSlots = isOneShot
-      ? [
-          {
-            number: 1,
-            amount: formData.totalSlotAmount || 8400,
-            dueDate: formData.joiningDateEndClient || new Date().toISOString().split('T')[0],
-          },
-        ]
+      ? (formData.totalSlotAmount !== undefined && formData.totalSlotAmount > 0
+          ? [
+              {
+                number: 1,
+                amount: formData.totalSlotAmount,
+                dueDate: formData.joiningDateEndClient || new Date().toISOString().split('T')[0],
+              },
+            ]
+          : [])
       : customSlots;
+
+    const slotSum = finalSlots.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+    const totalSlotAmount = formData.totalSlotAmount !== undefined ? formData.totalSlotAmount : slotSum;
+    const upfrontAmount = formData.upfrontAmount !== undefined ? formData.upfrontAmount : 0;
 
     onSubmitForm({
       ...formData,
+      upfrontAmount,
+      totalSlotAmount,
       joiningDateStatus: formData.joiningDateStatus || (formData.joiningDateEndClient ? 'SET' : 'TO_BE_UPDATED'),
       endClient: formData.clientEmployerName || formData.endClient || 'Client US',
       jobRole: formData.jobRole || 'Full Stack Engineer',
-      annualIncome: formData.annualIncome || (formData.totalSlotAmount || 8400) * 12.5,
+      annualIncome: formData.annualIncome ?? (totalSlotAmount * 12.5),
       numberOfInstallments: finalSlots.length,
       totalSlotNumber: finalSlots.length,
       isOneShotPayment: isOneShot,
@@ -1002,22 +1022,35 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
                     <span className="text-slate-500 dark:text-slate-400 text-[11px]">Due Date: {formData.joiningDateEndClient || 'Joining Date'}</span>
                   </div>
                   <span className="text-base font-black text-blue-700 dark:text-cyan-400 font-tabular">
-                    ${(formData.totalSlotAmount || 8400).toLocaleString()}
+                    ${(formData.totalSlotAmount ?? 8400).toLocaleString()}
                   </span>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
-                    {customSlots.map((slot, index) => (
-                      <div
-                        key={index}
-                        className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2 relative group"
+                  {customSlots.length === 0 ? (
+                    <div className="p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/60 dark:bg-slate-900/40 text-center space-y-2">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        No installment slots configured (0 Slots – $0 Amount).
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddSlot}
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs inline-flex items-center gap-1 shadow-xs cursor-pointer"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-cyan-400 border border-blue-200 dark:border-blue-800">
-                            Slot #{slot.number}
-                          </span>
-                          {customSlots.length > 1 && (
+                        <Plus className="w-3.5 h-3.5" /> Add Slot
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                      {customSlots.map((slot, index) => (
+                        <div
+                          key={index}
+                          className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xs space-y-2 relative group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-cyan-400 border border-blue-200 dark:border-blue-800">
+                              Slot #{slot.number}
+                            </span>
                             <button
                               type="button"
                               onClick={() => handleRemoveSlot(index)}
@@ -1026,47 +1059,47 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          )}
-                        </div>
+                          </div>
 
-                        {/* Amount */}
-                        <div>
-                          <label className="block text-[10px] text-slate-400 font-medium mb-0.5">Amount ($)</label>
-                          <input
-                            type="number"
-                            value={slot.amount ?? ''}
-                            onChange={(e) => handleSlotChange(index, 'amount', e.target.value)}
-                            className="w-full px-2 py-1 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-tabular font-bold"
-                          />
-                        </div>
+                          {/* Amount */}
+                          <div>
+                            <label className="block text-[10px] text-slate-400 font-medium mb-0.5">Amount ($)</label>
+                            <input
+                              type="number"
+                              value={slot.amount ?? ''}
+                              onChange={(e) => handleSlotChange(index, 'amount', e.target.value)}
+                              className="w-full px-2 py-1 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-tabular font-bold"
+                            />
+                          </div>
 
-                        {/* Due Date */}
-                        <div>
-                          <label className="block text-[10px] text-slate-400 font-medium mb-0.5">Due Date</label>
-                          <input
-                            type="date"
-                            value={slot.dueDate}
-                            onChange={(e) => handleSlotChange(index, 'dueDate', e.target.value)}
-                            className="w-full px-2 py-1 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
-                          />
+                          {/* Due Date */}
+                          <div>
+                            <label className="block text-[10px] text-slate-400 font-medium mb-0.5">Due Date</label>
+                            <input
+                              type="date"
+                              value={slot.dueDate}
+                              onChange={(e) => handleSlotChange(index, 'dueDate', e.target.value)}
+                              className="w-full px-2 py-1 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Allocated Balance Check */}
                   <div className="flex items-center justify-between text-[11px] px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
                     <span className="text-slate-500 dark:text-slate-400">
-                      Total Allocated: <strong className="text-slate-800 dark:text-slate-200">${customSlots.reduce((s, i) => s + i.amount, 0).toLocaleString()}</strong> across {customSlots.length} slots
+                      Total Allocated: <strong className="text-slate-800 dark:text-slate-200">${customSlots.reduce((s, i) => s + (Number(i.amount) || 0), 0).toLocaleString()}</strong> across {customSlots.length} slots
                     </span>
-                    {customSlots.reduce((s, i) => s + i.amount, 0) === (formData.totalSlotAmount || 8400) ? (
+                    {customSlots.reduce((s, i) => s + (Number(i.amount) || 0), 0) === (formData.totalSlotAmount ?? 8400) ? (
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Slots Match Total Amount
                       </span>
                     ) : (
                       <span className="text-amber-600 dark:text-amber-400 font-bold">
-                        Target Total: ${(formData.totalSlotAmount || 8400).toLocaleString()}
+                        Target Total: ${(formData.totalSlotAmount ?? 8400).toLocaleString()}
                       </span>
                     )}
                   </div>

@@ -285,13 +285,13 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                       {/* 11. Total Slot Amount */}
                       <td className="py-3.5 px-3.5 font-extrabold text-emerald-700 dark:text-emerald-400 font-tabular">
-                        ${(cand.totalSlotAmount ?? (cand.paymentPlan?.totalPayable || 8400)).toLocaleString()}
+                        ${(cand.totalSlotAmount ?? (cand.paymentPlan?.totalPayable ?? 0)).toLocaleString()}
                       </td>
 
                       {/* 12. Total Slot number */}
                       <td className="py-3.5 px-3.5 text-center font-bold text-slate-800 dark:text-slate-200">
                         <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-cyan-400 border border-blue-200 dark:border-blue-800 font-bold">
-                          {cand.totalSlotNumber ?? (cand.numberOfInstallments || 4)}
+                          {cand.totalSlotNumber ?? (cand.paymentPlan?.installments?.length ?? (cand.numberOfInstallments || 0))}
                         </span>
                       </td>
 
@@ -532,7 +532,7 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
                       <td className="py-3.5 px-3.5">
                         {cand.isOneShotPayment || cand.paymentPlan?.isOneShot ? (
                           <span className="text-[11px] font-mono text-blue-700 dark:text-cyan-400 font-bold">
-                            ${(cand.paymentPlan?.totalPayable || cand.totalSlotAmount || 8400).toLocaleString()} (Full)
+                            ${(cand.paymentPlan?.totalPayable ?? (cand.totalSlotAmount ?? 0)).toLocaleString()} (Full)
                           </span>
                         ) : (
                           <div className="flex items-center gap-1.5">

@@ -532,12 +532,12 @@ export default function DashboardPage() {
       jobRole: data.jobRole || 'Consultant',
       endClient: data.clientEmployerName || data.endClient || 'NetBounce Client',
       poMonth: data.poMonth || 'November 2026',
-      annualIncome: data.annualIncome || 0,
-      upfrontAmount: data.upfrontAmount || 0,
+      annualIncome: data.annualIncome ?? 0,
+      upfrontAmount: data.upfrontAmount ?? 0,
       bgcOfferStatus: data.bgcOfferStatus || 'INITIATED',
       joiningDateEndClient: data.joiningDateEndClient || '',
       finalAgreedPaymentCondition: data.finalAgreedPaymentCondition || '',
-      numberOfInstallments: data.totalSlotNumber || data.numberOfInstallments || 4,
+      numberOfInstallments: data.totalSlotNumber ?? (data.bgcSlots ? data.bgcSlots.length : 0),
       remarks: data.remarks || 'Draft saved by compliance manager.',
       status: 'DRAFT',
       createdBy: currentUser.id,
@@ -548,8 +548,8 @@ export default function DashboardPage() {
       poType: data.poType || '1 st',
       bgcOfferAmount: data.bgcOfferAmount ?? 2500,
       onOfferPaymentDate: data.onOfferPaymentDate || '',
-      totalSlotAmount: data.totalSlotAmount ?? 8400,
-      totalSlotNumber: data.totalSlotNumber ?? 4,
+      totalSlotAmount: data.totalSlotAmount ?? 0,
+      totalSlotNumber: data.totalSlotNumber ?? (data.bgcSlots ? data.bgcSlots.length : 0),
       bgcDoneBy: data.bgcDoneBy || 'Imran',
       clientEmployerName: data.clientEmployerName || data.endClient || '',
       bgcCompanyName: data.bgcCompanyName || '',
@@ -576,14 +576,16 @@ export default function DashboardPage() {
   // Handler: Submit PO / BGC Form (Atomic Transition to SUBMITTED + Auto-Handoff)
   const handleSubmitPoForm = (data: Partial<CandidateRecord>) => {
     const joiningDate = data.joiningDateEndClient || new Date().toISOString().split('T')[0];
-    const totalPayableAmount = data.totalSlotAmount || (data.annualIncome ? data.annualIncome * 0.08 : 8400) || 8400;
+    const totalPayableAmount = data.totalSlotAmount !== undefined ? data.totalSlotAmount : (data.annualIncome ? data.annualIncome * 0.08 : 0);
     const targetId = data.id || `cand-${Date.now().toString(36)}`;
 
     // Build installments based on custom slots from BGC Form or One-Shot
     let installments: Installment[] = [];
     if (data.isOneShotPayment) {
-      installments = generateOneShotInstallment(totalPayableAmount, joiningDate);
-    } else if (data.bgcSlots && data.bgcSlots.length > 0) {
+      if (totalPayableAmount > 0) {
+        installments = generateOneShotInstallment(totalPayableAmount, joiningDate);
+      }
+    } else if (data.bgcSlots !== undefined) {
       installments = data.bgcSlots.map((s) => ({
         id: `inst-${targetId}-${s.number}`,
         number: s.number,
@@ -594,8 +596,10 @@ export default function DashboardPage() {
         status: 'PENDING' as const,
         reminderStatus: 'SCHEDULED' as const,
       }));
+    } else if (data.totalSlotNumber === 0 || totalPayableAmount === 0) {
+      installments = [];
     } else {
-      const count = data.totalSlotNumber || data.numberOfInstallments || 4;
+      const count = data.totalSlotNumber ?? (data.numberOfInstallments || 4);
       installments = generateStandardInstallments(totalPayableAmount, count, joiningDate, 30);
     }
 
@@ -621,13 +625,13 @@ export default function DashboardPage() {
       implementationPartner: data.implementationPartner,
       poMonth: data.poMonth || 'November 2026',
       packageRate: data.packageRate,
-      annualIncome: data.annualIncome || totalPayableAmount * 12.5,
-      upfrontAmount: data.upfrontAmount || 0,
+      annualIncome: data.annualIncome ?? (totalPayableAmount * 12.5),
+      upfrontAmount: data.upfrontAmount ?? 0,
       bgcOfferStatus: data.bgcOfferStatus || 'INITIATED',
       joiningDateEndClient: joiningDate,
       joiningDateCompany: data.joiningDateCompany,
       agreementEndPercentMonths: data.agreementEndPercentMonths,
-      finalAgreedPaymentCondition: data.finalAgreedPaymentCondition || `$${totalPayableAmount.toLocaleString()} in ${count} installments`,
+      finalAgreedPaymentCondition: data.finalAgreedPaymentCondition || (count > 0 ? `$${totalPayableAmount.toLocaleString()} in ${count} installments` : 'No installment payment scheduled'),
       numberOfInstallments: count,
       remarks: data.remarks || 'BGC / PO Record submitted. Payment schedule auto-generated.',
       status: 'SUBMITTED',
