@@ -312,7 +312,9 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                       {/* 15. BGC company name */}
                       <td className="py-3.5 px-3.5 text-slate-700 dark:text-slate-300">
-                        {cand.bgcCompanyName || 'NetBounce Corp'}
+                        {cand.bgcCompanyName && cand.bgcCompanyName !== 'NetBounce Corp' && cand.bgcCompanyName !== 'NetBounce Verification Corp'
+                          ? cand.bgcCompanyName
+                          : '—'}
                       </td>
 
                       {/* 16. BGC start date */}

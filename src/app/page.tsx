@@ -301,7 +301,12 @@ export default function DashboardPage() {
         const saved = localStorage.getItem('nb_bgc_candidates_list');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed.map((c: CandidateRecord) => ({
+              ...c,
+              bgcCompanyName: c.bgcCompanyName === 'NetBounce Corp' || c.bgcCompanyName === 'NetBounce Verification Corp' ? '' : c.bgcCompanyName,
+            }));
+          }
         }
       } catch (e) {}
     }
@@ -344,9 +349,13 @@ export default function DashboardPage() {
         .then((data) => {
           if (!isSubscribed) return;
           if (data?.success && Array.isArray(data.candidates)) {
+            const sanitizedList = data.candidates.map((c: CandidateRecord) => ({
+              ...c,
+              bgcCompanyName: c.bgcCompanyName === 'NetBounce Corp' || c.bgcCompanyName === 'NetBounce Verification Corp' ? '' : c.bgcCompanyName,
+            }));
             setCandidates((prev) => {
               const prevStr = JSON.stringify(prev);
-              const nextStr = JSON.stringify(data.candidates);
+              const nextStr = JSON.stringify(sanitizedList);
               if (prevStr === nextStr) {
                 return prev; // No changes, prevent unnecessary re-render
               }
@@ -355,7 +364,7 @@ export default function DashboardPage() {
               try {
                 localStorage.setItem('nb_bgc_candidates_list', nextStr);
               } catch (e) {}
-              return data.candidates;
+              return sanitizedList;
             });
           }
         })
@@ -552,7 +561,7 @@ export default function DashboardPage() {
       totalSlotNumber: data.totalSlotNumber ?? (data.bgcSlots ? data.bgcSlots.length : 0),
       bgcDoneBy: data.bgcDoneBy || 'Imran',
       clientEmployerName: data.clientEmployerName || data.endClient || '',
-      bgcCompanyName: data.bgcCompanyName || '',
+      bgcCompanyName: (data.bgcCompanyName && data.bgcCompanyName !== 'NetBounce Corp' && data.bgcCompanyName !== 'NetBounce Verification Corp') ? data.bgcCompanyName : '',
       bgcStartDate: data.bgcStartDate || '',
       emailReferenceGiven: data.emailReferenceGiven || 'Yes',
       phoneReferenceGiven: data.phoneReferenceGiven || 'Yes',
@@ -648,7 +657,7 @@ export default function DashboardPage() {
       totalSlotNumber: count,
       bgcDoneBy: data.bgcDoneBy || 'Imran',
       clientEmployerName: data.clientEmployerName || data.endClient || '',
-      bgcCompanyName: data.bgcCompanyName || '',
+      bgcCompanyName: (data.bgcCompanyName && data.bgcCompanyName !== 'NetBounce Corp' && data.bgcCompanyName !== 'NetBounce Verification Corp') ? data.bgcCompanyName : '',
       bgcStartDate: data.bgcStartDate || '',
       emailReferenceGiven: data.emailReferenceGiven || 'Yes',
       phoneReferenceGiven: data.phoneReferenceGiven || 'Yes',

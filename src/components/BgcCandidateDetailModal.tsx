@@ -275,7 +275,11 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
                   <span className="text-slate-400">BGC Company Name</span>
-                  <span className="font-medium text-slate-800 dark:text-slate-200">{candidate.bgcCompanyName || 'NetBounce Corp'}</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    {candidate.bgcCompanyName && candidate.bgcCompanyName !== 'NetBounce Corp' && candidate.bgcCompanyName !== 'NetBounce Verification Corp'
+                      ? candidate.bgcCompanyName
+                      : '—'}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center py-1">
                   <span className="text-slate-400">Current Job Role</span>
