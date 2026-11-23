@@ -297,17 +297,23 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                       {/* 13. BGC Done By */}
                       <td className="py-3.5 px-3.5">
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${(cand.bgcDoneBy === 'Imran')
-                          ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800'
-                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
-                          }`}>
-                          {cand.bgcDoneBy || 'Imran'}
-                        </span>
+                        {cand.bgcDoneBy ? (
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold ${(cand.bgcDoneBy === 'Imran')
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800'
+                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800'
+                            }`}>
+                            {cand.bgcDoneBy}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 font-medium">—</span>
+                        )}
                       </td>
 
                       {/* 14. Client/employer name */}
                       <td className="py-3.5 px-3.5 font-semibold text-slate-900 dark:text-white">
-                        {cand.clientEmployerName || cand.endClient || '—'}
+                        {(cand.clientEmployerName && cand.clientEmployerName !== 'Client US' && cand.clientEmployerName !== 'NetBounce Client')
+                          ? cand.clientEmployerName
+                          : (cand.endClient && cand.endClient !== 'Client US' && cand.endClient !== 'NetBounce Client' ? cand.endClient : '—')}
                       </td>
 
                       {/* 15. BGC company name */}
@@ -478,7 +484,9 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                       {/* 5. Client / Employer */}
                       <td className="py-3.5 px-3.5 font-semibold text-slate-900 dark:text-white">
-                        {cand.clientEmployerName || cand.endClient || '—'}
+                        {(cand.clientEmployerName && cand.clientEmployerName !== 'Client US' && cand.clientEmployerName !== 'NetBounce Client')
+                          ? cand.clientEmployerName
+                          : (cand.endClient && cand.endClient !== 'Client US' && cand.endClient !== 'NetBounce Client' ? cand.endClient : '—')}
                       </td>
 
                       {/* 6. Joining Date */}
@@ -618,7 +626,11 @@ export const PaymentLedger: React.FC<PaymentLedgerProps> = ({
 
                     {/* Client / Employer */}
                     <td className="py-3.5 px-3.5">
-                      <div className="font-bold text-slate-900 dark:text-white text-xs">{cand.clientEmployerName || cand.endClient}</div>
+                      <div className="font-bold text-slate-900 dark:text-white text-xs">
+                        {(cand.clientEmployerName && cand.clientEmployerName !== 'Client US' && cand.clientEmployerName !== 'NetBounce Client')
+                          ? cand.clientEmployerName
+                          : (cand.endClient && cand.endClient !== 'Client US' && cand.endClient !== 'NetBounce Client' ? cand.endClient : '—')}
+                      </div>
                       <div className="text-[10px] text-slate-500 font-medium">{cand.jobRole}</div>
                     </td>
 

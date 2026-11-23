@@ -86,7 +86,11 @@ export const DeleteCandidateModal: React.FC<DeleteCandidateModalProps> = ({
                   {candidate.candidateName}
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-                  Client: <strong className="text-slate-800 dark:text-slate-200">{candidate.clientEmployerName || candidate.endClient || '—'}</strong>
+                  Client: <strong className="text-slate-800 dark:text-slate-200">
+                    {(candidate.clientEmployerName && candidate.clientEmployerName !== 'Client US' && candidate.clientEmployerName !== 'NetBounce Client')
+                      ? candidate.clientEmployerName
+                      : (candidate.endClient && candidate.endClient !== 'Client US' && candidate.endClient !== 'NetBounce Client' ? candidate.endClient : '—')}
+                  </strong>
                 </p>
               </div>
             </div>

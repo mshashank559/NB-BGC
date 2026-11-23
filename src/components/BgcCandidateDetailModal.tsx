@@ -84,7 +84,11 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Client: <strong className="text-slate-800 dark:text-slate-200">{candidate.clientEmployerName || candidate.endClient || '—'}</strong> • PO Type: <strong className="text-blue-600 dark:text-cyan-400">{candidate.poType || '1 st'}</strong>
+                Client: <strong className="text-slate-800 dark:text-slate-200">
+                  {(candidate.clientEmployerName && candidate.clientEmployerName !== 'Client US' && candidate.clientEmployerName !== 'NetBounce Client')
+                    ? candidate.clientEmployerName
+                    : (candidate.endClient && candidate.endClient !== 'Client US' && candidate.endClient !== 'NetBounce Client' ? candidate.endClient : '—')}
+                </strong> • PO Type: <strong className="text-blue-600 dark:text-cyan-400">{candidate.poType || '1 st'}</strong>
               </p>
             </div>
           </div>
@@ -251,13 +255,17 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
                 </div>
                 <div className="flex justify-between items-center py-1">
                   <span className="text-slate-400">BGC Done By</span>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    candidate.bgcDoneBy === 'Imran'
-                      ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400'
-                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400'
-                  }`}>
-                    {candidate.bgcDoneBy || 'Imran'}
-                  </span>
+                  {candidate.bgcDoneBy ? (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      candidate.bgcDoneBy === 'Imran'
+                        ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400'
+                    }`}>
+                      {candidate.bgcDoneBy}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 dark:text-slate-500 font-medium">—</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -271,7 +279,11 @@ export const BgcCandidateDetailModal: React.FC<BgcCandidateDetailModalProps> = (
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
                   <span className="text-slate-400">Client / Employer Name</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{candidate.clientEmployerName || candidate.endClient || '—'}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {(candidate.clientEmployerName && candidate.clientEmployerName !== 'Client US' && candidate.clientEmployerName !== 'NetBounce Client')
+                      ? candidate.clientEmployerName
+                      : (candidate.endClient && candidate.endClient !== 'Client US' && candidate.endClient !== 'NetBounce Client' ? candidate.endClient : '—')}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center py-1 border-b border-slate-200/60 dark:border-slate-700/60">
                   <span className="text-slate-400">BGC Company Name</span>

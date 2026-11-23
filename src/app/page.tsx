@@ -304,6 +304,8 @@ export default function DashboardPage() {
           if (Array.isArray(parsed) && parsed.length > 0) {
             return parsed.map((c: CandidateRecord) => ({
               ...c,
+              clientEmployerName: (c.clientEmployerName === 'Client US' || c.clientEmployerName === 'NetBounce Client') ? '' : c.clientEmployerName,
+              endClient: (c.endClient === 'Client US' || c.endClient === 'NetBounce Client') ? '' : c.endClient,
               bgcCompanyName: c.bgcCompanyName === 'NetBounce Corp' || c.bgcCompanyName === 'NetBounce Verification Corp' ? '' : c.bgcCompanyName,
             }));
           }
@@ -351,6 +353,8 @@ export default function DashboardPage() {
           if (data?.success && Array.isArray(data.candidates)) {
             const sanitizedList = data.candidates.map((c: CandidateRecord) => ({
               ...c,
+              clientEmployerName: (c.clientEmployerName === 'Client US' || c.clientEmployerName === 'NetBounce Client') ? '' : c.clientEmployerName,
+              endClient: (c.endClient === 'Client US' || c.endClient === 'NetBounce Client') ? '' : c.endClient,
               bgcCompanyName: c.bgcCompanyName === 'NetBounce Corp' || c.bgcCompanyName === 'NetBounce Verification Corp' ? '' : c.bgcCompanyName,
             }));
             setCandidates((prev) => {
@@ -539,7 +543,9 @@ export default function DashboardPage() {
       salesPerson: data.salesPerson || '',
       teamLead: data.teamLead || 'Rudra',
       jobRole: data.jobRole || 'Consultant',
-      endClient: data.clientEmployerName || data.endClient || 'NetBounce Client',
+      endClient: (data.clientEmployerName && data.clientEmployerName !== 'Client US' && data.clientEmployerName !== 'NetBounce Client')
+        ? data.clientEmployerName
+        : (data.endClient && data.endClient !== 'Client US' && data.endClient !== 'NetBounce Client' ? data.endClient : ''),
       poMonth: data.poMonth || 'November 2026',
       annualIncome: data.annualIncome ?? 0,
       upfrontAmount: data.upfrontAmount ?? 0,
@@ -559,8 +565,10 @@ export default function DashboardPage() {
       onOfferPaymentDate: data.onOfferPaymentDate || '',
       totalSlotAmount: data.totalSlotAmount ?? 0,
       totalSlotNumber: data.totalSlotNumber ?? (data.bgcSlots ? data.bgcSlots.length : 0),
-      bgcDoneBy: data.bgcDoneBy || 'Imran',
-      clientEmployerName: data.clientEmployerName || data.endClient || '',
+      bgcDoneBy: data.bgcDoneBy || '',
+      clientEmployerName: (data.clientEmployerName && data.clientEmployerName !== 'Client US' && data.clientEmployerName !== 'NetBounce Client')
+        ? data.clientEmployerName
+        : '',
       bgcCompanyName: (data.bgcCompanyName && data.bgcCompanyName !== 'NetBounce Corp' && data.bgcCompanyName !== 'NetBounce Verification Corp') ? data.bgcCompanyName : '',
       bgcStartDate: data.bgcStartDate || '',
       emailReferenceGiven: data.emailReferenceGiven || 'Yes',
@@ -630,7 +638,9 @@ export default function DashboardPage() {
       seniorRecruiter: data.seniorRecruiter,
       jobRole: data.jobRole || 'Consultant',
       jobLocation: data.jobLocation,
-      endClient: data.clientEmployerName || data.endClient || 'NetBounce Client',
+      endClient: (data.clientEmployerName && data.clientEmployerName !== 'Client US' && data.clientEmployerName !== 'NetBounce Client')
+        ? data.clientEmployerName
+        : (data.endClient && data.endClient !== 'Client US' && data.endClient !== 'NetBounce Client' ? data.endClient : ''),
       implementationPartner: data.implementationPartner,
       poMonth: data.poMonth || 'November 2026',
       packageRate: data.packageRate,
@@ -655,8 +665,10 @@ export default function DashboardPage() {
       onOfferPaymentDate: data.onOfferPaymentDate || '',
       totalSlotAmount: totalPayableAmount,
       totalSlotNumber: count,
-      bgcDoneBy: data.bgcDoneBy || 'Imran',
-      clientEmployerName: data.clientEmployerName || data.endClient || '',
+      bgcDoneBy: data.bgcDoneBy || '',
+      clientEmployerName: (data.clientEmployerName && data.clientEmployerName !== 'Client US' && data.clientEmployerName !== 'NetBounce Client')
+        ? data.clientEmployerName
+        : '',
       bgcCompanyName: (data.bgcCompanyName && data.bgcCompanyName !== 'NetBounce Corp' && data.bgcCompanyName !== 'NetBounce Verification Corp') ? data.bgcCompanyName : '',
       bgcStartDate: data.bgcStartDate || '',
       emailReferenceGiven: data.emailReferenceGiven || 'Yes',

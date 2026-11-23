@@ -36,7 +36,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
     onOfferPaymentDate: '',
     totalSlotAmount: 8400,
     totalSlotNumber: 4,
-    bgcDoneBy: 'Imran',
+    bgcDoneBy: '',
     clientEmployerName: '',
     bgcCompanyName: '',
     bgcStartDate: '',
@@ -101,8 +101,10 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
         onOfferPaymentDate: initialData.onOfferPaymentDate || '',
         totalSlotAmount: initialData.totalSlotAmount ?? (initialData.paymentPlan?.totalPayable ?? 8400),
         totalSlotNumber: initialData.totalSlotNumber ?? (initialData.numberOfInstallments ?? 4),
-        bgcDoneBy: initialData.bgcDoneBy || 'Imran',
-        clientEmployerName: initialData.clientEmployerName || initialData.endClient || '',
+        bgcDoneBy: initialData.bgcDoneBy || '',
+        clientEmployerName: (initialData.clientEmployerName && initialData.clientEmployerName !== 'Client US' && initialData.clientEmployerName !== 'NetBounce Client')
+          ? initialData.clientEmployerName
+          : (initialData.endClient && initialData.endClient !== 'Client US' && initialData.endClient !== 'NetBounce Client' ? initialData.endClient : ''),
         bgcCompanyName: initialData.bgcCompanyName || '',
         bgcStartDate: initialData.bgcStartDate || '',
         emailReferenceGiven: initialData.emailReferenceGiven || 'Yes',
@@ -168,7 +170,7 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
         onOfferPaymentDate: '',
         totalSlotAmount: 8400,
         totalSlotNumber: 4,
-        bgcDoneBy: 'Imran',
+        bgcDoneBy: '',
         clientEmployerName: '',
         bgcCompanyName: '',
         bgcStartDate: '',
@@ -425,7 +427,12 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
       upfrontAmount,
       totalSlotAmount,
       joiningDateStatus: formData.joiningDateStatus || (formData.joiningDateEndClient ? 'SET' : 'TO_BE_UPDATED'),
-      endClient: formData.clientEmployerName || formData.endClient || 'Client US',
+      endClient: (formData.clientEmployerName && formData.clientEmployerName !== 'Client US' && formData.clientEmployerName !== 'NetBounce Client')
+        ? formData.clientEmployerName
+        : (formData.endClient && formData.endClient !== 'Client US' && formData.endClient !== 'NetBounce Client' ? formData.endClient : ''),
+      clientEmployerName: (formData.clientEmployerName && formData.clientEmployerName !== 'Client US' && formData.clientEmployerName !== 'NetBounce Client')
+        ? formData.clientEmployerName
+        : '',
       jobRole: formData.jobRole || 'Full Stack Engineer',
       annualIncome: formData.annualIncome ?? (totalSlotAmount * 12.5),
       numberOfInstallments: finalSlots.length,
@@ -1130,10 +1137,11 @@ export const BgcFormModal: React.FC<BgcFormModalProps> = ({
                   BGC Done By
                 </label>
                 <select
-                  value={formData.bgcDoneBy || 'Imran'}
+                  value={formData.bgcDoneBy || ''}
                   onChange={(e) => handleChange('bgcDoneBy', e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
+                  <option value="">Select BGC Done By</option>
                   <option value="Imran">Imran</option>
                   <option value="Deepak">Deepak</option>
                 </select>
